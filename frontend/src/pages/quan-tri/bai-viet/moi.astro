@@ -1,0 +1,10 @@
+---
+import ArticleEditor from '../../../features/editor/ArticleEditor.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { apiBaseForBrowser } from '../../../lib/api';
+---
+
+<AdminLayout title="Bài viết mới">
+  <h1>Bài viết mới</h1>
+  <ArticleEditor apiBase={apiBaseForBrowser()} />
+</AdminLayout>

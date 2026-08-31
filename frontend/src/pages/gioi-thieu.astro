@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../lib/site';
+---
+
+<BaseLayout title="Giới thiệu">
+  <article class="article-content">
+    <p class="eyebrow">Giới thiệu</p>
+    <h1>Chào bạn, mình là {site.author}.</h1>
+    <p>Đây là nơi mình lưu lại những điều đang học, những công cụ hữu ích và vài suy nghĩ chưa kịp hoàn thiện.</p>
+    <p>Nội dung và thông tin liên hệ mẫu của blog được tập trung trong một cấu hình để bạn có thể thay đổi dễ dàng.</p>
+  </article>
+</BaseLayout>

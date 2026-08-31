@@ -1,0 +1,56 @@
+---
+import NotFound from '../../components/NotFound.astro';
+import { APIError, getArticle } from '../../lib/api';
+import { canonicalURL, site } from '../../lib/site';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { PublicArticle } from '../../features/article/types';
+
+let article: PublicArticle | undefined;
+let unavailable = false;
+try {
+  article = (await getArticle(Astro.params.slug ?? '')).data;
+} catch (error) {
+  if (error instanceof APIError && error.status === 404) Astro.response.status = 404;
+  else { Astro.response.status = 503; unavailable = true; }
+}
+const formatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'long', timeZone: 'UTC' });
+const isUpdated = article?.published_at && new Date(article.updated_at).getTime() > new Date(article.published_at).getTime();
+const jsonLD = article ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: article.title,
+  description: article.excerpt,
+  datePublished: article.published_at,
+  dateModified: article.updated_at,
+  mainEntityOfPage: canonicalURL(Astro.url.pathname),
+  author: { '@type': 'Person', name: site.author },
+  image: article.cover_image_url ?? undefined,
+}).replace(/</g, '\\u003c') : '';
+---
+
+{article ? (
+  <BaseLayout title={article.title} description={article.excerpt} image={article.cover_image_url} type="article">
+    <article>
+      <header class="article-header">
+        <p class="eyebrow">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p>
+        <h1>{article.title}</h1>
+        <p class="article-excerpt">{article.excerpt}</p>
+        {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}>#{tag.name}</a></li>)}</ul>}
+        {isUpdated && <p class="article-list__meta">Cập nhật: <time datetime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}
+      </header>
+      {article.cover_image_url && <img class="article-cover" src={article.cover_image_url} alt="" />}
+      {article.table_of_contents.length > 0 && (
+        <nav class="toc" aria-label="Mục lục">
+          <strong>Mục lục</strong>
+          <ol>{article.table_of_contents.map((item) => <li class={`toc-level-${item.level}`}><a href={`#${item.id}`}>{item.text}</a></li>)}</ol>
+        </nav>
+      )}
+      <div class="article-content" set:html={article.content_html}></div>
+    </article>
+    <script is:inline type="application/ld+json" set:html={jsonLD}></script>
+  </BaseLayout>
+) : (
+  <BaseLayout title={unavailable ? 'Tạm thời không khả dụng' : 'Không tìm thấy'}>
+    {unavailable ? <p class="empty-state">Chưa thể tải bài viết. Vui lòng thử lại sau.</p> : <NotFound />}
+  </BaseLayout>
+)}

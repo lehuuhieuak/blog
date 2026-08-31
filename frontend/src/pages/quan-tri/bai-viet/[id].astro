@@ -1,0 +1,14 @@
+---
+import ArticleEditor from '../../../features/editor/ArticleEditor.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { APIError, apiBaseForBrowser, getAdminArticle } from '../../../lib/api';
+import type { AdminArticle } from "../../../features/article/types";
+
+let article: AdminArticle | undefined;
+let unavailable = false;
+try { article = (await getAdminArticle(Astro.params.id ?? '')).data; } catch (error) { if (error instanceof APIError && error.status === 404) Astro.response.status = 404; else { unavailable = true; Astro.response.status = 503; } }
+---
+
+<AdminLayout title={article?.title ?? 'Không tìm thấy'}>
+  {article ? <><h1>Sửa bài viết</h1><ArticleEditor article={article} apiBase={apiBaseForBrowser()} /></> : <p class="empty-state">{unavailable ? 'Không thể tải bài viết. Vui lòng thử lại sau.' : 'Không tìm thấy bài viết.'}</p>}
+</AdminLayout>

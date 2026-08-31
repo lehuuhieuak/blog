@@ -1,0 +1,24 @@
+---
+import type { ArticleSummary } from './types';
+
+interface Props { articles: ArticleSummary[] }
+const { articles } = Astro.props;
+const formatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'long', timeZone: 'UTC' });
+---
+
+{articles.length === 0 ? (
+  <p class="empty-state">Chưa có bài viết nào.</p>
+) : (
+  <ol class="article-list">
+    {articles.map((article) => (
+      <li>
+        <article>
+          <p class="article-list__meta">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>}</p>
+          <h2><a href={`/bai-viet/${article.slug}`}>{article.title}</a></h2>
+          <p>{article.excerpt}</p>
+          {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}>#{tag.name}</a></li>)}</ul>}
+        </article>
+      </li>
+    ))}
+  </ol>
+)}

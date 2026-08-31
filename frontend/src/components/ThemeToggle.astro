@@ -1,0 +1,12 @@
+<button class="theme-toggle" type="button" aria-label="Đổi giao diện sáng tối" data-theme-toggle>
+  <span aria-hidden="true">◐</span>
+</button>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  button?.addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem('theme', nextTheme);
+  });
+</script>

@@ -1,0 +1,29 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Pagination from '../../../components/Pagination.astro';
+import type { AdminArticle, ListResponse } from "../../../features/article/types";
+import { APIError, listAdminArticles } from '../../../lib/api';
+
+const requestedPage = Number(Astro.url.searchParams.get('page') ?? '1');
+const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+const status = Astro.url.searchParams.get('status') === 'published' ? 'published' : Astro.url.searchParams.get('status') === 'draft' ? 'draft' : undefined;
+let result: ListResponse<AdminArticle> = { data: [], meta: { page, page_size: 10, total: 0, total_pages: 0 } };
+let unavailable = false;
+try { result = await listAdminArticles(page, status); } catch (error) { unavailable = !(error instanceof APIError && error.status === 404); Astro.response.status = 503; }
+const query = status ? `?status=${status}` : '';
+---
+
+<AdminLayout title="Bài viết">
+  <div class="admin-actions">
+    <h1>Bài viết</h1>
+    <a href="/quan-tri/bai-viet/moi">Tạo bài viết</a>
+  </div>
+  <p><a href="/quan-tri/bai-viet">Tất cả</a> · <a href="/quan-tri/bai-viet?status=draft">Nháp</a> · <a href="/quan-tri/bai-viet?status=published">Đã xuất bản</a></p>
+  {unavailable ? <p class="empty-state">Không thể tải danh sách. Vui lòng thử lại sau.</p> : (
+    <table class="admin-list">
+      <thead><tr><th>Tiêu đề</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
+      <tbody>{result.data.map((article) => <tr><td><a href={`/quan-tri/bai-viet/${article.id}`}>{article.title}</a></td><td>{article.status === 'published' ? 'Đã xuất bản' : 'Nháp'}</td><td><time datetime={article.updated_at}>{new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeZone: 'UTC' }).format(new Date(article.updated_at))}</time></td></tr>)}</tbody>
+    </table>
+  )}
+  {!unavailable && <Pagination pathname={`/quan-tri/bai-viet${query}`} current={result.meta.page} total={result.meta.total_pages} />}
+</AdminLayout>

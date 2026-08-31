@@ -1,0 +1,21 @@
+---
+import { pageHref, pageNumbers } from '../lib/pagination';
+
+interface Props {
+  pathname: string;
+  current: number;
+  total: number;
+}
+const { pathname, current, total } = Astro.props;
+const pages = pageNumbers(current, total);
+---
+
+{total > 1 && (
+  <nav class="pagination" aria-label="Phân trang">
+    {current > 1 && <a href={pageHref(pathname, current - 1)} rel="prev">← Mới hơn</a>}
+    <ol>
+      {pages.map((page) => <li><a href={pageHref(pathname, page)} aria-current={page === current ? 'page' : undefined}>{page}</a></li>)}
+    </ol>
+    {current < total && <a href={pageHref(pathname, current + 1)} rel="next">Cũ hơn →</a>}
+  </nav>
+)}

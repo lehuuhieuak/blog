@@ -84,3 +84,4 @@ go.work.sum
 .vscode/
 # Blog application artifacts
 frontend/playwright-report/
+!frontend/package-lock.json

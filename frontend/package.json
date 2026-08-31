@@ -1,0 +1,25 @@
+{
+  "name": "minimal-blog-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "check": "astro check",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@astrojs/node": "^10.1.4",
+    "astro": "^6.4.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.59.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
