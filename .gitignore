@@ -82,3 +82,5 @@ go.work.sum
 # Editor/IDE
 .idea/
 .vscode/
+# Blog application artifacts
+frontend/playwright-report/

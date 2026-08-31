@@ -1,0 +1,175 @@
+openapi: 3.1.0
+info:
+  title: Minimal Blog API
+  version: 1.0.0
+  description: Public and intentionally unauthenticated administration API for the personal blog.
+servers:
+  - url: /api/v1
+paths:
+  /healthz:
+    get:
+      servers: [{ url: / }]
+      responses: { '200': { description: API process is healthy } }
+  /readyz:
+    get:
+      servers: [{ url: / }]
+      responses: { '200': { description: Database is ready }, '503': { $ref: '#/components/responses/ServiceUnavailable' } }
+  /articles:
+    get:
+      summary: List published articles
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: tag
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/ArticleList' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /articles/{slug}:
+    get:
+      summary: Get one published article
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { $ref: '#/components/responses/PublicArticle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /tags:
+    get:
+      summary: List tags used by published articles
+      responses:
+        '200':
+          description: Tags
+          content: { application/json: { schema: { type: object, required: [data], properties: { data: { type: array, items: { $ref: '#/components/schemas/Tag' } } } } } }
+  /admin/articles:
+    get:
+      summary: List all articles including drafts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, published] }
+      responses: { '200': { $ref: '#/components/responses/ArticleList' }, '422': { $ref: '#/components/responses/ValidationError' } }
+    post:
+      summary: Create article
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ArticleInput' } } } }
+      responses: { '201': { $ref: '#/components/responses/AdminArticle' }, '409': { $ref: '#/components/responses/Conflict' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /admin/articles/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+    get:
+      summary: Get an article for editing
+      responses: { '200': { $ref: '#/components/responses/AdminArticle' }, '404': { $ref: '#/components/responses/NotFound' } }
+    put:
+      summary: Update article
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ArticleInput' } } } }
+      responses: { '200': { $ref: '#/components/responses/AdminArticle' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' }, '422': { $ref: '#/components/responses/ValidationError' } }
+    delete:
+      summary: Permanently delete article
+      responses: { '204': { description: Deleted }, '404': { $ref: '#/components/responses/NotFound' } }
+  /admin/markdown/preview:
+    post:
+      summary: Render the same sanitized Markdown pipeline used by public articles
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [content_markdown], properties: { content_markdown: { type: string } } } } }
+      responses: { '200': { $ref: '#/components/responses/Markdown' }, '422': { $ref: '#/components/responses/ValidationError' } }
+components:
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: page_size, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+  responses:
+    ArticleList:
+      description: Paginated articles
+      content: { application/json: { schema: { $ref: '#/components/schemas/ArticlePage' } } }
+    PublicArticle:
+      description: Published article
+      content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/PublicArticle' } } } } }
+    AdminArticle:
+      description: Article for administration
+      content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/AdminArticle' } } } } }
+    Markdown:
+      description: Sanitized Markdown rendering
+      content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Markdown' } } } } }
+    ValidationError:
+      description: Invalid input
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    NotFound:
+      description: Resource was not found
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    Conflict:
+      description: Conflicting slug or a locked slug
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    ServiceUnavailable:
+      description: Dependency is not ready
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+  schemas:
+    ArticleInput:
+      type: object
+      required: [title, excerpt, content_markdown, status]
+      properties:
+        title: { type: string, example: Tiêu đề }
+        slug: { type: string, example: tieu-de }
+        excerpt: { type: string, example: Mô tả ngắn }
+        content_markdown: { type: string, example: '# Nội dung' }
+        cover_image_url: { type: [string, 'null'], format: uri }
+        tags: { type: array, items: { type: string }, example: [Golang, Backend] }
+        status: { type: string, enum: [draft, published] }
+    Tag:
+      type: object
+      required: [id, name, slug]
+      properties: { id: { type: integer }, name: { type: string }, slug: { type: string } }
+    ArticleBase:
+      type: object
+      required: [id, title, slug, excerpt, status, created_at, updated_at, tags]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        slug: { type: string }
+        excerpt: { type: string }
+        cover_image_url: { type: [string, 'null'], format: uri }
+        status: { type: string, enum: [draft, published] }
+        published_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        tags: { type: array, items: { $ref: '#/components/schemas/Tag' } }
+    PublicArticle:
+      allOf:
+        - $ref: '#/components/schemas/ArticleBase'
+        - type: object
+          required: [content_html, table_of_contents, reading_minutes]
+          properties:
+            content_html: { type: string }
+            table_of_contents: { type: array, items: { $ref: '#/components/schemas/TOCItem' } }
+            reading_minutes: { type: integer, minimum: 1 }
+    AdminArticle:
+      allOf:
+        - $ref: '#/components/schemas/ArticleBase'
+        - type: object
+          required: [content_markdown]
+          properties: { content_markdown: { type: string } }
+    ArticlePage:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/ArticleBase' } }
+        meta: { $ref: '#/components/schemas/Pagination' }
+    Pagination:
+      type: object
+      required: [page, page_size, total, total_pages]
+      properties: { page: { type: integer }, page_size: { type: integer }, total: { type: integer }, total_pages: { type: integer } }
+    TOCItem:
+      type: object
+      required: [level, id, text]
+      properties: { level: { type: integer, enum: [2, 3] }, id: { type: string }, text: { type: string } }
+    Markdown:
+      type: object
+      required: [html, table_of_contents, reading_minutes]
+      properties: { html: { type: string }, table_of_contents: { type: array, items: { $ref: '#/components/schemas/TOCItem' } }, reading_minutes: { type: integer, minimum: 1 } }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties: { code: { type: string }, message: { type: string }, fields: { type: object, additionalProperties: { type: string } } }
