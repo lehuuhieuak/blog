@@ -60,6 +60,19 @@
 - Timestamp dùng UTC và ISO-8601.
 - Bài draft không được lộ qua API, sitemap, RSS hoặc trang công khai.
 
+## Git workflow
+
+- Khi người dùng yêu cầu triển khai toàn bộ `PLAN.md`, chia công việc thành các milestone logic và có thể review độc lập.
+- Được phép tạo local commit sau mỗi milestone đã hoàn chỉnh và vượt qua validation tương ứng.
+- Không commit trạng thái đang compile lỗi, test lỗi hoặc còn thiếu phần bắt buộc của milestone.
+- Unit test phải nằm trong cùng commit với hành vi backend mới hoặc bị thay đổi.
+- Mỗi commit chỉ chứa thay đổi thuộc milestone hiện tại; không stage thay đổi không liên quan.
+- Trước mỗi commit, kiểm tra `git status`, staged diff và kết quả test.
+- Sử dụng Conventional Commits: `feat`, `fix`, `test`, `chore`, `docs`, `refactor`.
+- Không amend, squash, rebase hoặc sửa commit đã có nếu người dùng chưa yêu cầu.
+- Không push lên remote, tạo pull request hoặc merge branch nếu người dùng chưa yêu cầu.
+- Nếu validation không chạy được, không tự commit; báo rõ blocker và kết quả đã kiểm tra.
+
 ## Validation
 
 Trước khi hoàn thành một thay đổi:
