@@ -1,12 +1,35 @@
-<button class="theme-toggle" type="button" aria-label="Đổi giao diện sáng tối" data-theme-toggle>
-  <span aria-hidden="true">◐</span>
+<button class="theme-toggle" type="button" aria-label="Đổi giao diện" aria-pressed="false" data-theme-toggle>
+  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z"></path>
+  </svg>
+  <span class="sr-only" data-theme-toggle-text>Đổi giao diện</span>
 </button>
 
 <script>
   const button = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const label = button?.querySelector<HTMLElement>('[data-theme-toggle-text]');
+  const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+  const currentTheme = () => document.documentElement.dataset.theme
+    ?? (systemTheme.matches ? 'dark' : 'light');
+
+  const updateLabel = () => {
+    if (!button) return;
+    const isDark = currentTheme() === 'dark';
+    const nextLabel = isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
+    button.setAttribute('aria-label', nextLabel);
+    button.setAttribute('aria-pressed', String(isDark));
+    if (label) label.textContent = nextLabel;
+  };
+
+  updateLabel();
+  systemTheme.addEventListener('change', () => {
+    if (!document.documentElement.dataset.theme) updateLabel();
+  });
   button?.addEventListener('click', () => {
-    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = nextTheme;
     localStorage.setItem('theme', nextTheme);
+    updateLabel();
   });
 </script>

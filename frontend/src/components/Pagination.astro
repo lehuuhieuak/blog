@@ -12,10 +12,14 @@ const pages = pageNumbers(current, total);
 
 {total > 1 && (
   <nav class="pagination" aria-label="Phân trang">
-    {current > 1 && <a href={pageHref(pathname, current - 1)} rel="prev">← Mới hơn</a>}
+    {current > 1
+      ? <a class="pagination__control" href={pageHref(pathname, current - 1)} rel="prev">← <span>Mới hơn</span></a>
+      : <span class="pagination__control pagination__control--placeholder" aria-hidden="true">← <span>Mới hơn</span></span>}
     <ol>
       {pages.map((page) => <li><a href={pageHref(pathname, page)} aria-current={page === current ? 'page' : undefined}>{page}</a></li>)}
     </ol>
-    {current < total && <a href={pageHref(pathname, current + 1)} rel="next">Cũ hơn →</a>}
+    {current < total
+      ? <a class="pagination__control" href={pageHref(pathname, current + 1)} rel="next"><span>Cũ hơn</span> →</a>
+      : <span class="pagination__control pagination__control--placeholder" aria-hidden="true"><span>Cũ hơn</span> →</span>}
   </nav>
 )}

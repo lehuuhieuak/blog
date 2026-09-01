@@ -1,0 +1,27 @@
+---
+import type { TOCItem } from '../features/article/types';
+
+interface Props {
+  items: TOCItem[];
+  collapsible?: boolean;
+}
+const { items, collapsible = false } = Astro.props;
+---
+
+{collapsible ? (
+  <details class="toc toc--compact">
+    <summary>Mục lục</summary>
+    <nav aria-label="Mục lục bài viết">
+      <ol>
+        {items.map((item) => <li class={`toc-level-${item.level}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
+      </ol>
+    </nav>
+  </details>
+) : (
+  <nav class="toc toc--desktop" aria-label="Mục lục bài viết">
+    <p class="toc__title">Mục lục</p>
+    <ol>
+      {items.map((item) => <li class={`toc-level-${item.level}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
+    </ol>
+  </nav>
+)}

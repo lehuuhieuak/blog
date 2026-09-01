@@ -18,12 +18,18 @@ const query = status ? `?status=${status}` : '';
     <h1>Bài viết</h1>
     <a href="/quan-tri/bai-viet/moi">Tạo bài viết</a>
   </div>
-  <p><a href="/quan-tri/bai-viet">Tất cả</a> · <a href="/quan-tri/bai-viet?status=draft">Nháp</a> · <a href="/quan-tri/bai-viet?status=published">Đã xuất bản</a></p>
+  <nav class="admin-filters" aria-label="Lọc bài viết">
+    <a href="/quan-tri/bai-viet" aria-current={status === undefined ? 'page' : undefined}>Tất cả</a>
+    <a href="/quan-tri/bai-viet?status=draft" aria-current={status === 'draft' ? 'page' : undefined}>Nháp</a>
+    <a href="/quan-tri/bai-viet?status=published" aria-current={status === 'published' ? 'page' : undefined}>Đã xuất bản</a>
+  </nav>
   {unavailable ? <p class="empty-state">Không thể tải danh sách. Vui lòng thử lại sau.</p> : (
-    <table class="admin-list">
-      <thead><tr><th>Tiêu đề</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
-      <tbody>{result.data.map((article) => <tr><td><a href={`/quan-tri/bai-viet/${article.id}`}>{article.title}</a></td><td>{article.status === 'published' ? 'Đã xuất bản' : 'Nháp'}</td><td><time datetime={article.updated_at}>{new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeZone: 'UTC' }).format(new Date(article.updated_at))}</time></td></tr>)}</tbody>
-    </table>
+    <div class="admin-table-scroll" tabindex="0" role="region" aria-label="Danh sách bài viết">
+      <table class="admin-list">
+        <thead><tr><th scope="col">Tiêu đề</th><th scope="col">Trạng thái</th><th scope="col">Cập nhật</th></tr></thead>
+        <tbody>{result.data.map((article) => <tr><td><a href={`/quan-tri/bai-viet/${article.id}`}>{article.title}</a></td><td>{article.status === 'published' ? 'Đã xuất bản' : 'Nháp'}</td><td><time datetime={article.updated_at}>{new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeZone: 'UTC' }).format(new Date(article.updated_at))}</time></td></tr>)}</tbody>
+      </table>
+    </div>
   )}
   {!unavailable && <Pagination pathname={`/quan-tri/bai-viet${query}`} current={result.meta.page} total={result.meta.total_pages} />}
 </AdminLayout>

@@ -1,5 +1,6 @@
 ---
 import NotFound from '../../components/NotFound.astro';
+import ArticleTOC from '../../components/ArticleTOC.astro';
 import { APIError, getArticle } from '../../lib/api';
 import { canonicalURL, site } from '../../lib/site';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -29,24 +30,24 @@ const jsonLD = article ? JSON.stringify({
 ---
 
 {article ? (
-  <BaseLayout title={article.title} description={article.excerpt} image={article.cover_image_url} type="article">
-    <article>
-      <header class="article-header">
-        <p class="eyebrow">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p>
-        <h1>{article.title}</h1>
-        <p class="article-excerpt">{article.excerpt}</p>
-        {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}>#{tag.name}</a></li>)}</ul>}
-        {isUpdated && <p class="article-list__meta">Cập nhật: <time datetime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}
-      </header>
-      {article.cover_image_url && <img class="article-cover" src={article.cover_image_url} alt="" />}
+  <BaseLayout title={article.title} description={article.excerpt} image={article.cover_image_url} type="article" width="wide">
+    <div class="article-layout">
+      {article.table_of_contents.length > 0 && <ArticleTOC items={article.table_of_contents} collapsible />}
+      <article>
+        <header class="article-header">
+          <p class="eyebrow">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p>
+          <h1>{article.title}</h1>
+          <p class="article-excerpt">{article.excerpt}</p>
+          {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}>#{tag.name}</a></li>)}</ul>}
+          {isUpdated && <p class="article-list__meta">Cập nhật: <time datetime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}
+        </header>
+        {article.cover_image_url && <img class="article-cover" src={article.cover_image_url} alt="" />}
+        <div class="article-content" set:html={article.content_html}></div>
+      </article>
       {article.table_of_contents.length > 0 && (
-        <nav class="toc" aria-label="Mục lục">
-          <strong>Mục lục</strong>
-          <ol>{article.table_of_contents.map((item) => <li class={`toc-level-${item.level}`}><a href={`#${item.id}`}>{item.text}</a></li>)}</ol>
-        </nav>
+        <aside class="article-layout__toc"><ArticleTOC items={article.table_of_contents} /></aside>
       )}
-      <div class="article-content" set:html={article.content_html}></div>
-    </article>
+    </div>
     <script is:inline type="application/ld+json" set:html={jsonLD}></script>
   </BaseLayout>
 ) : (

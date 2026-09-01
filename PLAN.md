@@ -140,7 +140,7 @@ Route quản lý không được liên kết từ navigation công khai.
 
 ### 3.4. Thiết kế giao diện
 
-- Cột nội dung rộng khoảng 720px, căn giữa màn hình.
+- Dùng khung trang responsive tối đa 88rem (~1408px) với gutter co giãn theo viewport. Các trang danh sách và giới thiệu giữ cột đọc tối đa khoảng 52rem; trang bài viết desktop dùng cột bài tối đa 48rem cùng mục lục sticky ở cột phải, còn màn hình hẹp hiển thị mục lục thu gọn phía trên bài viết. Khu vực quản trị dùng toàn bộ khung rộng.
 - Dùng system font, khoảng trắng rộng và màu sắc tiết chế.
 - Không dùng card lớn, sidebar quảng cáo hoặc thành phần gây mất tập trung.
 - Responsive từ mobile đến desktop.
