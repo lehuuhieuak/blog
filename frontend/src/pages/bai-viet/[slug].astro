@@ -16,6 +16,7 @@ try {
 }
 const formatter = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'long', timeZone: 'UTC' });
 const isUpdated = article?.published_at && new Date(article.updated_at).getTime() > new Date(article.published_at).getTime();
+const tableOfContents = article?.table_of_contents ?? [];
 const jsonLD = article ? JSON.stringify({
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -32,7 +33,7 @@ const jsonLD = article ? JSON.stringify({
 {article ? (
   <BaseLayout title={article.title} description={article.excerpt} image={article.cover_image_url} type="article" width="wide">
     <div class="article-layout">
-      {article.table_of_contents.length > 0 && <ArticleTOC items={article.table_of_contents} collapsible />}
+      {tableOfContents.length > 0 && <ArticleTOC items={tableOfContents} collapsible />}
       <article>
         <header class="article-header">
           <p class="eyebrow">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p>
@@ -44,8 +45,8 @@ const jsonLD = article ? JSON.stringify({
         {article.cover_image_url && <img class="article-cover" src={article.cover_image_url} alt="" />}
         <div class="article-content" set:html={article.content_html}></div>
       </article>
-      {article.table_of_contents.length > 0 && (
-        <aside class="article-layout__toc"><ArticleTOC items={article.table_of_contents} /></aside>
+      {tableOfContents.length > 0 && (
+        <aside class="article-layout__toc"><ArticleTOC items={tableOfContents} /></aside>
       )}
     </div>
     <script is:inline type="application/ld+json" set:html={jsonLD}></script>
