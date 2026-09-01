@@ -34,7 +34,7 @@ const socialImage = image ? new URL(image, site.url).toString() : undefined;
     {socialImage && <meta name="twitter:image" content={socialImage} />}
     <title>{pageTitle}</title>
     <script is:inline>
-      {`try { const saved = localStorage.getItem('theme'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch {}`}
+      try { const saved = localStorage.getItem('theme'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch {}
     </script>
   </head>
   <body>

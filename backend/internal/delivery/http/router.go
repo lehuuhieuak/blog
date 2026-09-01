@@ -82,7 +82,7 @@ func (h *Handler) getPublic(c *gin.Context) {
 		writeError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, publicArticle(article, h.articles))
+	c.JSON(http.StatusOK, gin.H{"data": publicArticle(article, h.articles)})
 }
 func (h *Handler) tags(c *gin.Context) {
 	tags, err := h.articles.Tags(c.Request.Context())
