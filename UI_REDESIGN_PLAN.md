@@ -10,7 +10,7 @@
 
 - Thiết lập design tokens đơn sắc: nền light `#FFFFFF`, chữ đen/xám than, border xám nhạt; chỉ dùng màu riêng cho cảnh báo và hành động nguy hiểm. Giữ dark mode và system font.
 - Dùng khung trang tối đa `88rem` (~1408px), gutter responsive; trang danh sách/giới thiệu dùng cột đọc khoảng `52rem`, còn admin và bài chi tiết dùng layout rộng.
-- Trang bài viết desktop dùng grid gồm cột bài tối đa `48rem`, khoảng cách 3–4rem và mục lục 14–16rem bên phải. Mục lục sticky, thụt cấp `h3`, cho phép tiêu đề dài xuống dòng và không thêm active-scroll JavaScript.
+- Trang bài viết desktop dùng grid gồm cột bài tối đa `48rem`, khoảng cách 3–4rem và mục lục 14–16rem bên phải. Mục lục sticky, thụt cấp `h3`, cho phép tiêu đề dài xuống dòng; dùng scrollspy JavaScript tối thiểu không-framework để highlight heading hiện tại mà không đổi URL hoặc focus.
 - Dưới breakpoint khoảng `68rem`, bỏ sidebar và hiển thị mục lục dạng `details/summary` đóng mặc định phía trên bài viết. Dùng chung một component dữ liệu mục lục để tránh lệch nội dung giữa hai chế độ.
 - Hoàn thiện typography Markdown: kiểm soát độ dài dòng khoảng 65–75 ký tự, nhịp heading/đoạn văn, blockquote, bảng, inline code, code block, ảnh và URL dài; không để nội dung gây tràn ngang trên mobile.
 - Chuẩn hóa header, footer, tag và phân trang: active state rõ, focus ring, vùng bấm phù hợp, phân trang không xô lệch khi thiếu nút trước/sau và thêm skip link tới nội dung chính.
@@ -40,4 +40,4 @@
 - Áp dụng cho cả public và admin.
 - Giữ dark mode; yêu cầu nền trắng tuyệt đối chỉ áp dụng cho light mode.
 - Ưu tiên khung rộng nhưng không mở rộng dòng văn bản đến mức giảm khả năng đọc.
-- Không thêm scroll progress, hiệu ứng trang trí, animation nội dung, active-heading tracking hoặc icon package.
+- Không thêm scroll progress, hiệu ứng trang trí, animation nội dung hoặc icon package; ngoại lệ duy nhất là active-heading tracking tối thiểu cho mục lục.

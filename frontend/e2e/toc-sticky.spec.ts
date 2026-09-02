@@ -8,13 +8,13 @@ function longMarkdown(): string {
   const paragraph = 'Nội dung kiểm thử đủ dài để phần bài viết tiếp tục cuộn trong khi mục lục vẫn ở trong vùng nhìn thấy của trang.';
   const sections = Array.from(
     { length: 32 },
-    (_, index) => `## Phần nội dung ${index + 1}\n\n${Array.from({ length: 5 }, () => paragraph).join(' ')}`,
+    (_, index) => `## Phần nội dung ${index + 1}\n\n${Array.from({ length: 5 }, () => paragraph).join(' ')}\n\n### Chi tiết phần ${index + 1}\n\n${Array.from({ length: 2 }, () => paragraph).join(' ')}`,
   );
 
   return ['# Bài viết có mục lục dài', ...sections].join('\n\n');
 }
 
-test('desktop TOC stays within the article and scrolls independently', async ({ page }) => {
+test('TOC stays within the article and highlights the heading at the reading marker', async ({ page }) => {
   const unique = Date.now().toString();
   const apiBase = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1';
   const createdArticleIDs: string[] = [];
@@ -55,6 +55,7 @@ test('desktop TOC stays within the article and scrolls independently', async ({ 
     const sidebar = page.locator('.article-layout__toc');
     await expect(toc).toBeVisible();
     await expect(sidebar).toBeVisible();
+    await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(0);
     expect(await toc.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
     expect(await toc.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
 
@@ -65,12 +66,29 @@ test('desktop TOC stays within the article and scrolls independently', async ({ 
     });
     await expect.poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().top)).toBeCloseTo(32, 1);
 
+    const articleURL = page.url();
+    await page.evaluate(() => {
+      const heading = document.getElementById('chi-tiet-phan-10');
+      if (!heading) throw new Error('Heading is missing');
+      const readingMarker = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 6;
+      window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - readingMarker + 8 });
+    });
+    await expect(toc.locator('[data-toc-target="chi-tiet-phan-10"]')).toHaveAttribute('aria-current', 'location');
+    await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(2);
+    expect(page.url()).toBe(articleURL);
+
+    await page.evaluate(() => window.scrollTo({ top: 0 }));
+    await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(0);
+
     const lastTOCLink = toc.locator('a').last();
     await lastTOCLink.focus();
     await expect(lastTOCLink).toBeFocused();
     await expect(lastTOCLink).toBeVisible();
-    await lastTOCLink.press('Enter');
-    await expect(page).toHaveURL(/#phan-noi-dung-32$/);
+    const fragmentTOCLink = toc.locator('[data-toc-target="chi-tiet-phan-20"]');
+    await fragmentTOCLink.focus();
+    await fragmentTOCLink.press('Enter');
+    await expect(page).toHaveURL(/#chi-tiet-phan-20$/);
+    await expect(fragmentTOCLink).toHaveAttribute('aria-current', 'location');
 
     await page.locator('.site-footer').scrollIntoViewIfNeeded();
     const endPositions = await page.evaluate(() => {
@@ -83,6 +101,22 @@ test('desktop TOC stays within the article and scrolls independently', async ({ 
       };
     });
     expect(endPositions.tocBottom).toBeLessThanOrEqual(endPositions.footerTop + 1);
+
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`/bai-viet/${longArticleSlug}`);
+    const compactTOC = page.locator('.toc--compact');
+    await expect(compactTOC).not.toHaveAttribute('open', '');
+    await page.evaluate(() => {
+      const heading = document.getElementById('phan-noi-dung-10');
+      if (!heading) throw new Error('Heading is missing');
+      const readingMarker = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 6;
+      window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - readingMarker + 8 });
+    });
+    await expect(compactTOC).not.toHaveAttribute('open', '');
+    const activeCompactLink = compactTOC.locator('[data-toc-target="phan-noi-dung-10"]');
+    await expect(activeCompactLink).toHaveAttribute('aria-current', 'location');
+    await compactTOC.locator('summary').click();
+    await expect(activeCompactLink).toBeVisible();
 
     await page.goto(`/bai-viet/khong-muc-luc-${unique}`);
     await expect(page.locator('.toc--desktop')).toHaveCount(0);

@@ -383,12 +383,22 @@ h1 {
 }
 
 .toc a {
+  display: block;
+  border-left: 0.1875rem solid transparent;
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
+  padding-left: 0.625rem;
 }
 
 .toc a:hover {
   color: var(--foreground);
+}
+
+.toc a[aria-current='location'],
+.toc__link--active {
+  border-left-color: var(--foreground);
+  color: var(--foreground);
+  font-weight: 700;
 }
 
 .toc .toc-level-3 {

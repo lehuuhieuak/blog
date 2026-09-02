@@ -1,6 +1,6 @@
 # Blog cá nhân tối giản
 
-Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Astro SSR. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ server. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái, còn React chỉ hydrate theme toggle và editor quản trị.
+Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Astro SSR. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ server. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái, còn React chỉ hydrate theme toggle và editor quản trị. Trang bài viết có thêm script nhỏ không dùng framework để highlight mục lục khi cuộn; nội dung công khai vẫn SSR hoàn toàn.
 
 ## Chạy toàn bộ stack
 
@@ -17,7 +17,7 @@ Máy cần Go 1.27, Node.js 24 và PostgreSQL 18, hoặc có thể dùng các co
 
 - Backend: đặt `DATABASE_URL`, sau đó chạy trong `backend/`: `go run ./cmd/api`.
 - Migration: trong `backend/`: `go run ./cmd/migrate`.
-- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Astro vẫn SSR nội dung; React chỉ là island cho theme và editor.
+- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Astro vẫn SSR nội dung; React chỉ là island cho theme và editor, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
 - Migration mới: thêm file mới có tên tăng dần trong `backend/migrations/`, ví dụ `000002_add_summary.sql`. Không chỉnh sửa migration đã áp dụng.
 
 ## Kiểm tra

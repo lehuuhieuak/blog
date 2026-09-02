@@ -19,7 +19,7 @@
 
 ## Chuyển đổi component
 
-- Giữ layout, route, article list, Markdown HTML và TOC bằng Astro semantic markup; không dùng React cho nội dung tĩnh khi shadcn không đem lại giá trị.
+- Giữ layout, route, article list, Markdown HTML và TOC bằng Astro semantic markup; không dùng React cho nội dung tĩnh khi shadcn không đem lại giá trị. Trang bài viết cho phép một scrollspy nhỏ không-framework để đồng bộ active TOC trong DOM, không đổi URL hoặc focus.
 - Dùng component shadcn SSR cho pagination, tag badge, trạng thái lỗi/rỗng, cảnh báo admin và bảng danh sách; không gắn `client:*` cho các component này.
 - Chuyển theme toggle thành React island `client:load` dùng shadcn Button và Lucide; giữ hành vi light/dark, system preference và `localStorage` hiện tại.
 - Chuyển Article Editor thành React island `client:load` dùng Input, Textarea, Label, Button, Alert và AlertDialog. Giữ nguyên auto-slug, slug lock, dirty warning, payload API, preview HTML đã sanitize, trạng thái busy, redirect và error mapping.
@@ -31,7 +31,7 @@
 
 - Không thay đổi backend, database, API contract, OpenAPI hay article data types.
 - Props của editor vẫn là `article?: AdminArticle` và `apiBase: string`; dữ liệu được Astro SSR truyền sang React island.
-- Public article chỉ hydrate theme toggle; không tải editor, AlertDialog hoặc admin code.
+- Public article chỉ hydrate theme toggle; ngoài script scrollspy mục lục nhỏ, không tải editor, AlertDialog hoặc admin code.
 - Theme storage vẫn dùng key `theme` với `light`/`dark`; khi chưa lưu lựa chọn thì theo hệ thống.
 - Không bổ sung tính năng V1, authentication, search, upload hoặc client-side Markdown renderer.
 

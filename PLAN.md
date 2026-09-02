@@ -148,6 +148,7 @@ Route quản lý không được liên kết từ navigation công khai.
 - Theme sáng/tối dùng semantic CSS variables của shadcn/ui với `.dark` là selector.
 - Mặc định theo theme hệ thống; theme toggle React island lưu `light`/`dark` theo key `theme` trong `localStorage`.
 - Có inline script nhỏ để tránh nháy sai theme khi tải trang.
+- Trang bài viết vẫn render nội dung hoàn toàn bằng SSR; một script nhỏ không dùng framework chỉ đồng bộ trạng thái active của link mục lục với heading `h2`/`h3` đã đi qua mốc đọc 6rem. Script không đổi fragment, URL, focus hoặc trạng thái mở/đóng của mục lục mobile.
 - Tên blog, tác giả, mô tả và liên kết xã hội nằm trong một file cấu hình trung tâm với giá trị mẫu dễ thay đổi.
 
 ### 3.5. SEO
@@ -276,6 +277,7 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
   8. Xóa bài sau bước xác nhận.
 - Kiểm tra metadata, canonical, JSON-LD, sitemap, RSS và robots.
 - Kiểm tra theme persistence qua class `.dark`, responsive, điều hướng bàn phím và AlertDialog xóa bài.
+- Kiểm tra scrollspy mục lục desktop/mobile: chỉ một heading active sau mốc đọc, fragment chỉ đổi khi người đọc chọn link, và `details` mobile không tự đổi trạng thái.
 
 ### 6.3. CI và nghiệm thu cuối
 
