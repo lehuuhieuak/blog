@@ -8,7 +8,13 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   const apiBase = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1';
   const extraArticleIDs: string[] = [];
 
+  const missingArticle = await page.goto(`/bai-viet/khong-ton-tai-${unique}`);
+  expect(missingArticle?.status()).toBe(404);
+  const explicitNotFound = await page.goto("/404");
+  expect(explicitNotFound?.status()).toBe(404);
+
   await page.goto('/quan-tri/bai-viet/moi');
+  await expect(page.locator("meta[name=robots]")).toHaveAttribute("content", /noindex/);
   await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByLabel('Tiêu đề').fill(title);
   await page.locator('input[name="slug"]').fill(slug);
@@ -18,6 +24,9 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await page.getByRole('button', { name: 'Lưu nháp' }).click();
   await expect(page).toHaveURL(editPath);
   const editURL = page.url();
+
+  const draftPublic = await page.goto(`/bai-viet/${slug}`);
+  expect(draftPublic?.status()).toBe(404);
 
   await page.goto('/');
   await expect(page.getByRole('link', { name: title })).toHaveCount(0);
@@ -33,6 +42,9 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
 
   await page.goto('/');
   await expect(page.getByRole('link', { name: title })).toBeVisible();
+  const publicHTML = await page.request.get(`/bai-viet/${slug}`);
+  expect(publicHTML.status()).toBe(200);
+  expect(await publicHTML.text()).toContain(title);
   await page.goto(`/the/golang`);
   await expect(page.getByRole('link', { name: title })).toBeVisible();
 

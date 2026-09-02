@@ -1,6 +1,6 @@
 # Blog cá nhân tối giản
 
-Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Astro SSR. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ server. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái, còn React chỉ hydrate theme toggle và editor quản trị. Trang bài viết có thêm script nhỏ không dùng framework để highlight mục lục khi cuộn; nội dung công khai vẫn SSR hoàn toàn.
+Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Next.js App Router. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ Server Components. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái; chỉ theme toggle và editor quản trị là Client Components. Trang bài viết có thêm script nhỏ không dùng framework để highlight mục lục khi cuộn; nội dung công khai vẫn SSR hoàn toàn.
 
 ## Chạy toàn bộ stack
 
@@ -9,7 +9,7 @@ Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Astro SSR. Markd
 3. Chạy `docker compose up --build`.
 4. Mở `http://localhost:4321`; API ở `http://localhost:8080`.
 
-Compose khởi động PostgreSQL, chạy migration versioned một lần, rồi mới khởi động API và Astro. Kiểm tra `docker compose ps` để thấy các healthcheck. Dừng và xóa dữ liệu local bằng `docker compose down --volumes`.
+Compose khởi động PostgreSQL, chạy migration versioned một lần, rồi mới khởi động API và Next.js. Kiểm tra `docker compose ps` để thấy các healthcheck. Dừng và xóa dữ liệu local bằng `docker compose down --volumes`.
 
 ## Phát triển
 
@@ -17,7 +17,7 @@ Máy cần Go 1.27, Node.js 24 và PostgreSQL 18, hoặc có thể dùng các co
 
 - Backend: đặt `DATABASE_URL`, sau đó chạy trong `backend/`: `go run ./cmd/api`.
 - Migration: trong `backend/`: `go run ./cmd/migrate`.
-- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Astro vẫn SSR nội dung; React chỉ là island cho theme và editor, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
+- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Next.js vẫn SSR nội dung bằng Server Components; chỉ theme và editor là Client Components, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
 - Migration mới: thêm file mới có tên tăng dần trong `backend/migrations/`, ví dụ `000002_add_summary.sql`. Không chỉnh sửa migration đã áp dụng.
 
 ## Kiểm tra

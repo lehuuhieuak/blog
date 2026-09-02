@@ -1,6 +1,3 @@
 [submodule ".agents/skills/cc-skills-golang"]
 	path = .agents/skills/cc-skills-golang
 	url = https://github.com/samber/cc-skills-golang.git
-[submodule ".agents/skills/astro-skills"]
-	path = .agents/skills/astro-skills
-	url = https://github.com/astrolicious/agent-skills.git

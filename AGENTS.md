@@ -11,7 +11,7 @@
 ## Skills
 
 - Với mọi công việc Go, bắt đầu bằng skill `cc-skills-golang:golang-how-to` và chỉ tải các skill Go liên quan mà orchestrator lựa chọn.
-- Với code Astro, `.astro`, SSR, routing hoặc frontend structure, sử dụng skill `astro` khi skill này khả dụng.
+- Với code Next.js, React, SSR, routing hoặc frontend structure, sử dụng skill `vercel-react-best-practices` khi skill này khả dụng.
 - Không đọc toàn bộ bộ skill Go nếu nhiệm vụ chỉ cần một vài skill chuyên biệt.
 
 ## Backend rules
@@ -39,9 +39,9 @@
 
 ## Frontend rules
 
-- Dùng Astro SSR, TypeScript, Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI).
-- React 19 chỉ dùng cho island tương tác: theme toggle và editor quản trị (gồm preview/xóa); không chuyển trang công khai thành React SPA.
-- Trang công khai ưu tiên server-rendered HTML; component shadcn tĩnh phải SSR và không gắn `client:*`.
+- Dùng Next.js App Router/RSC, TypeScript, Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI).
+- React 19 mặc định là Server Components; chỉ dùng `"use client"` cho theme toggle, editor quản trị (gồm preview/xóa) và Base UI tương tác cần thiết; không chuyển trang công khai thành React SPA.
+- Trang công khai ưu tiên server-rendered HTML; component shadcn tĩnh phải server-safe và không mở rộng client boundary.
 - JavaScript phía client chỉ dành cho editor, preview và theme, ngoại trừ scrollspy mục lục nhỏ không dùng framework trên trang bài viết. Scrollspy chỉ cập nhật trạng thái DOM, không đổi URL, fragment, focus hoặc trạng thái `details`.
 - Giữ token semantic light/dark của shadcn, `.dark` là theme selector, và không duy trì hai hệ thống style cho cùng một control.
 - Không lặp lại logic render Markdown ở frontend.

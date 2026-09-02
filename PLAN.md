@@ -4,11 +4,11 @@
 
 - Monorepo gồm `backend/`, `frontend/` và `compose.yaml`.
 - Backend: Go 1.27, Gin, PostgreSQL 18, `pgx/v5`, theo Clean Architecture.
-- Frontend: Astro 6 SSR, TypeScript, React 19 cho các island tương tác, Tailwind CSS 4 và shadcn/ui (Base UI), Node.js 24 LTS.
-- React chỉ hydrate theme toggle và editor; các component tĩnh tiếp tục SSR. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
-- Docker Compose chạy PostgreSQL, migration, API và Astro frontend.
+- Frontend: Next.js 16.3.4 App Router, TypeScript, React 19, Tailwind CSS 4 và shadcn/ui (Base UI), Node.js 24 LTS.
+- Server Components là mặc định để trang nội dung tiếp tục SSR với JavaScript tối thiểu; chỉ theme toggle và editor quản trị là Client Components. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
+- Docker Compose chạy PostgreSQL, migration, API và Next.js frontend.
 
-Astro được chọn vì phù hợp với website thiên về nội dung, hỗ trợ server-side rendering và mặc định gửi rất ít JavaScript xuống trình duyệt. Điều này phù hợp với mục tiêu SEO tốt, giao diện tối giản và tập trung vào trải nghiệm đọc.
+Next.js được chọn để chuẩn hóa frontend trên React/Next.js trong khi vẫn giữ SSR và Server Components cho website thiên về nội dung. Điều này giữ SEO tốt, giao diện tối giản và trải nghiệm đọc tập trung mà không chuyển trang công khai thành SPA.
 
 ## 2. Backend và dữ liệu
 
@@ -88,14 +88,13 @@ Domain và application không được phụ thuộc vào Gin, pgx hoặc chi ti
 
 Frontend dùng feature-based architecture:
 
-- `pages`: routing và ghép các phần của trang.
+- `app`: App Router, route groups, metadata và ghép các phần của trang.
 - `features`: article, tag và editor, bao gồm API client, types và component đặc thù.
-- `components`: UI dùng chung Astro hoặc shadcn/ui và không chứa nghiệp vụ.
-- `layouts`: layout công khai và layout quản lý.
+- `components`: UI React dùng chung hoặc shadcn/ui và không chứa nghiệp vụ.
 - `lib`: site config, HTTP client và utilities.
 - `styles`: CSS variables, typography và global styles.
 
-Astro chạy ở chế độ SSR với Node adapter standalone. Các trang công khai và nội dung tĩnh dùng Astro component; theme toggle và editor dùng React island phía client. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
+Next.js chạy bằng App Router và `output: "standalone"`. Các trang công khai, metadata, danh sách, phân trang và nội dung tĩnh là Server Components; theme toggle và editor là Client Components. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
 
 ### 3.2. Route công khai
 
@@ -240,7 +239,7 @@ Docker Compose gồm:
 - `db`: PostgreSQL 18 với persistent volume và healthcheck.
 - `migrate`: chạy migration một lần và thoát.
 - `api`: Go API, chỉ khởi động sau khi migration thành công.
-- `web`: Astro SSR Node server.
+- `web`: Next.js standalone Node server.
 
 Các container dùng multi-stage build và chạy bằng non-root user khi khả thi. Repository có `.env.example`, không commit secret và có README hướng dẫn:
 
@@ -265,7 +264,7 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 
 ### 6.2. Frontend và end-to-end
 
-- Type check và production build của Astro với React/Tailwind/shadcn.
+- Type check và production build của Next.js với React/Tailwind/shadcn.
 - Playwright kiểm tra luồng:
   1. Tạo bài nháp.
   2. Xác nhận bài chưa xuất hiện công khai.
@@ -300,8 +299,8 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 
 ## 8. Tài liệu tham khảo kỹ thuật
 
-- Astro cho content-driven website: <https://docs.astro.build/en/concepts/why-astro/>
-- Astro Node SSR adapter: <https://v6.docs.astro.build/en/guides/integrations-guide/node/>
+- Next.js App Router và Server Components: <https://nextjs.org/docs/app>
+- Next.js standalone output: <https://nextjs.org/docs/app/api-reference/config/next-config-js/output>
 - Gin route groups và middleware: <https://gin-gonic.com/en/docs/routing/grouping-routes/>
 - Go release history: <https://go.dev/doc/devel/release>
 - Node.js release schedule: <https://nodejs.org/en/about/previous-releases>
