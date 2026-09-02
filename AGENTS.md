@@ -11,7 +11,7 @@
 ## Skills
 
 - Với mọi công việc Go, bắt đầu bằng skill `cc-skills-golang:golang-how-to` và chỉ tải các skill Go liên quan mà orchestrator lựa chọn.
-- Với code Astro, `.astro`, SSR, routing hoặc frontend structure, sử dụng skill `astro`.
+- Với code Astro, `.astro`, SSR, routing hoặc frontend structure, sử dụng skill `astro` khi skill này khả dụng.
 - Không đọc toàn bộ bộ skill Go nếu nhiệm vụ chỉ cần một vài skill chuyên biệt.
 
 ## Backend rules
@@ -39,10 +39,11 @@
 
 ## Frontend rules
 
-- Dùng Astro SSR, TypeScript và CSS thuần.
-- Không thêm React, Vue, Svelte, Tailwind hoặc UI framework nếu chưa được yêu cầu.
-- Trang công khai ưu tiên server-rendered HTML và không dùng client JavaScript nếu không cần thiết.
+- Dùng Astro SSR, TypeScript, Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI).
+- React 19 chỉ dùng cho island tương tác: theme toggle và editor quản trị (gồm preview/xóa); không chuyển trang công khai thành React SPA.
+- Trang công khai ưu tiên server-rendered HTML; component shadcn tĩnh phải SSR và không gắn `client:*`.
 - JavaScript phía client chỉ dành cho editor, preview và theme.
+- Giữ token semantic light/dark của shadcn, `.dark` là theme selector, và không duy trì hai hệ thống style cho cùng một control.
 - Không lặp lại logic render Markdown ở frontend.
 - Giữ giao diện một cột, tối giản, responsive và truy cập được bằng bàn phím.
 

@@ -1,6 +1,7 @@
 ---
-import ArticleEditor from '../../../features/editor/ArticleEditor.astro';
+import ArticleEditor from '../../../features/editor/ArticleEditor';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import UnavailableAlert from '../../../components/UnavailableAlert.astro';
 import { APIError, apiBaseForBrowser, getAdminArticle } from '../../../lib/api';
 import type { AdminArticle } from "../../../features/article/types";
 
@@ -10,5 +11,5 @@ try { article = (await getAdminArticle(Astro.params.id ?? '')).data; } catch (er
 ---
 
 <AdminLayout title={article?.title ?? 'Không tìm thấy'}>
-  {article ? <><h1>Sửa bài viết</h1><ArticleEditor article={article} apiBase={apiBaseForBrowser()} /></> : <p class="empty-state">{unavailable ? 'Không thể tải bài viết. Vui lòng thử lại sau.' : 'Không tìm thấy bài viết.'}</p>}
+  {article ? <><h1>Sửa bài viết</h1><ArticleEditor client:load article={article} apiBase={apiBaseForBrowser()} /></> : <UnavailableAlert title={unavailable ? "Không thể tải bài viết" : "Không tìm thấy bài viết"} message={unavailable ? "Vui lòng thử lại sau." : "Bài viết này không tồn tại."} />}
 </AdminLayout>

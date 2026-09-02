@@ -3,6 +3,7 @@ import ArticleList from '../../features/article/ArticleList.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import type { ArticleSummary } from "../../features/article/types";
 import Pagination from '../../components/Pagination.astro';
+import UnavailableAlert from '../../components/UnavailableAlert.astro';
 import { APIError, listArticles, listTags } from '../../lib/api';
 
 const slug = Astro.params.slug ?? '';
@@ -27,7 +28,7 @@ try {
   <section aria-labelledby="tag-title">
     <p class="eyebrow">Thẻ</p>
     <h1 id="tag-title">#{tagName}</h1>
-    {unavailable ? <p class="empty-state">Chưa thể tải bài viết. Vui lòng thử lại sau.</p> : <ArticleList articles={articles} />}
+    {unavailable ? <UnavailableAlert message="Chưa thể tải bài viết. Vui lòng thử lại sau." /> : <ArticleList articles={articles} />}
     {!unavailable && <Pagination pathname={`/the/${slug}`} current={meta.page} total={meta.total_pages} />}
   </section>
 </BaseLayout>

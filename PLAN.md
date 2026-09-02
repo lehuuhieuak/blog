@@ -4,8 +4,8 @@
 
 - Monorepo gồm `backend/`, `frontend/` và `compose.yaml`.
 - Backend: Go 1.27, Gin, PostgreSQL 18, `pgx/v5`, theo Clean Architecture.
-- Frontend: Astro 6 SSR, TypeScript, Node.js 24 LTS và CSS thuần.
-- Không dùng React hoặc Tailwind; JavaScript phía client chỉ dành cho theme và trình soạn Markdown.
+- Frontend: Astro 6 SSR, TypeScript, React 19 cho các island tương tác, Tailwind CSS 4 và shadcn/ui (Base UI), Node.js 24 LTS.
+- React chỉ hydrate theme toggle và editor; các component tĩnh tiếp tục SSR. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
 - Docker Compose chạy PostgreSQL, migration, API và Astro frontend.
 
 Astro được chọn vì phù hợp với website thiên về nội dung, hỗ trợ server-side rendering và mặc định gửi rất ít JavaScript xuống trình duyệt. Điều này phù hợp với mục tiêu SEO tốt, giao diện tối giản và tập trung vào trải nghiệm đọc.
@@ -90,12 +90,12 @@ Frontend dùng feature-based architecture:
 
 - `pages`: routing và ghép các phần của trang.
 - `features`: article, tag và editor, bao gồm API client, types và component đặc thù.
-- `components`: UI dùng chung và không chứa nghiệp vụ.
+- `components`: UI dùng chung Astro hoặc shadcn/ui và không chứa nghiệp vụ.
 - `layouts`: layout công khai và layout quản lý.
 - `lib`: site config, HTTP client và utilities.
 - `styles`: CSS variables, typography và global styles.
 
-Astro chạy ở chế độ SSR với Node adapter standalone. Các trang công khai dùng Astro component; theme và editor dùng TypeScript phía client, không bổ sung UI framework khác.
+Astro chạy ở chế độ SSR với Node adapter standalone. Các trang công khai và nội dung tĩnh dùng Astro component; theme toggle và editor dùng React island phía client. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
 
 ### 3.2. Route công khai
 
@@ -141,12 +141,12 @@ Route quản lý không được liên kết từ navigation công khai.
 ### 3.4. Thiết kế giao diện
 
 - Dùng khung trang responsive tối đa 88rem (~1408px) với gutter co giãn theo viewport. Các trang danh sách và giới thiệu giữ cột đọc tối đa khoảng 52rem; trang bài viết desktop dùng cột bài tối đa 48rem cùng mục lục sticky ở cột phải, còn màn hình hẹp hiển thị mục lục thu gọn phía trên bài viết. Khu vực quản trị dùng toàn bộ khung rộng.
-- Dùng system font, khoảng trắng rộng và màu sắc tiết chế.
+- Dùng system font, khoảng trắng rộng và màu sắc neutral tiết chế. Thiết kế dùng Tailwind CSS 4 và semantic CSS variables của shadcn/ui, với góc gần vuông và không có card/shadow trang trí.
 - Không dùng card lớn, sidebar quảng cáo hoặc thành phần gây mất tập trung.
 - Responsive từ mobile đến desktop.
 - Semantic HTML, focus state rõ ràng và thao tác được bằng bàn phím.
-- Theme sáng/tối dùng CSS variables.
-- Mặc định theo theme hệ thống; nút chuyển theme lưu lựa chọn vào `localStorage`.
+- Theme sáng/tối dùng semantic CSS variables của shadcn/ui với `.dark` là selector.
+- Mặc định theo theme hệ thống; theme toggle React island lưu `light`/`dark` theo key `theme` trong `localStorage`.
 - Có inline script nhỏ để tránh nháy sai theme khi tải trang.
 - Tên blog, tác giả, mô tả và liên kết xã hội nằm trong một file cấu hình trung tâm với giá trị mẫu dễ thay đổi.
 
@@ -264,7 +264,7 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 
 ### 6.2. Frontend và end-to-end
 
-- Type check và production build của Astro.
+- Type check và production build của Astro với React/Tailwind/shadcn.
 - Playwright kiểm tra luồng:
   1. Tạo bài nháp.
   2. Xác nhận bài chưa xuất hiện công khai.
@@ -275,7 +275,7 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
   7. Gỡ xuất bản và xác nhận trang công khai trả 404.
   8. Xóa bài sau bước xác nhận.
 - Kiểm tra metadata, canonical, JSON-LD, sitemap, RSS và robots.
-- Kiểm tra theme persistence, responsive và điều hướng bàn phím.
+- Kiểm tra theme persistence qua class `.dark`, responsive, điều hướng bàn phím và AlertDialog xóa bài.
 
 ### 6.3. CI và nghiệm thu cuối
 

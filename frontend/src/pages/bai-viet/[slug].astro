@@ -1,6 +1,8 @@
 ---
+import { Badge } from "@/components/ui/badge";
 import NotFound from '../../components/NotFound.astro';
 import ArticleTOC from '../../components/ArticleTOC.astro';
+import UnavailableAlert from '../../components/UnavailableAlert.astro';
 import { APIError, getArticle } from '../../lib/api';
 import { canonicalURL, site } from '../../lib/site';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -39,7 +41,7 @@ const jsonLD = article ? JSON.stringify({
           <p class="eyebrow">{article.published_at && <time datetime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p>
           <h1>{article.title}</h1>
           <p class="article-excerpt">{article.excerpt}</p>
-          {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}>#{tag.name}</a></li>)}</ul>}
+          {article.tags.length > 0 && <ul class="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li><a href={`/the/${tag.slug}`}><Badge variant="outline">#{tag.name}</Badge></a></li>)}</ul>}
           {isUpdated && <p class="article-list__meta">Cập nhật: <time datetime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}
         </header>
         {article.cover_image_url && <img class="article-cover" src={article.cover_image_url} alt="" />}
@@ -53,6 +55,6 @@ const jsonLD = article ? JSON.stringify({
   </BaseLayout>
 ) : (
   <BaseLayout title={unavailable ? 'Tạm thời không khả dụng' : 'Không tìm thấy'}>
-    {unavailable ? <p class="empty-state">Chưa thể tải bài viết. Vui lòng thử lại sau.</p> : <NotFound />}
+    {unavailable ? <UnavailableAlert message="Chưa thể tải bài viết. Vui lòng thử lại sau." /> : <NotFound />}
   </BaseLayout>
 )}

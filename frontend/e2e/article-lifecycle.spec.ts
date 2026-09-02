@@ -9,6 +9,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   const extraArticleIDs: string[] = [];
 
   await page.goto('/quan-tri/bai-viet/moi');
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByLabel('Tiêu đề').fill(title);
   await page.locator('input[name="slug"]').fill(slug);
   await page.getByLabel('Tóm tắt').fill('Mô tả dùng để xác minh luồng xuất bản.');
@@ -22,6 +23,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await expect(page.getByRole('link', { name: title })).toHaveCount(0);
 
   await page.goto(editURL);
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByRole('button', { name: 'Xem trước' }).click();
   await expect(page.locator('[data-preview-content]')).toContainText('Phần xem trước');
   await Promise.all([
@@ -35,6 +37,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await expect(page.getByRole('link', { name: title })).toBeVisible();
 
   await page.goto(editURL);
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
   const slugInput = page.locator('input[name="slug"]');
   await expect(slugInput).toBeDisabled();
   await expect(slugInput).toHaveValue(slug);
@@ -112,27 +115,27 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await expect(page).toHaveURL(/\?page=2$/);
 
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/');
-  await page.evaluate(() => localStorage.removeItem('theme'));
+  await page.goto("/");
+  await page.evaluate(() => localStorage.removeItem("theme"));
   await page.reload();
-  expect(await page.locator('body').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 255, 255)');
-  const themeToggle = page.locator('[data-theme-toggle]');
+  const themeToggle = page.locator("[data-theme-toggle]");
+  await expect(page.locator("html")).not.toHaveClass("dark");
   await themeToggle.focus();
   await expect(themeToggle).toBeFocused();
-  await page.keyboard.press('Enter');
-  const theme = await page.locator('html').getAttribute('data-theme');
+  await page.keyboard.press("Enter");
+  await expect(page.locator("html")).toHaveClass("dark");
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme ?? 'light');
-  await page.evaluate(() => localStorage.removeItem('theme'));
-  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator("html")).toHaveClass("dark");
+  await page.evaluate(() => localStorage.removeItem("theme"));
+  await page.emulateMedia({ colorScheme: "dark" });
   await page.reload();
-  await expect(page.locator('html')).not.toHaveAttribute('data-theme');
-  expect(await page.locator('body').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(23, 23, 23)');
-  await expect(page.locator('[data-theme-toggle]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-theme-toggle]')).toHaveAttribute('aria-label', 'Chuyển sang giao diện sáng');
-  await page.locator('[data-theme-toggle]').click();
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.locator("[data-theme-toggle]")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[data-theme-toggle]")).toHaveAttribute("aria-label", "Chuyển sang giao diện sáng");
+  await page.locator("[data-theme-toggle]").click();
+  await expect(page.locator("html")).not.toHaveClass("dark");
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator("html")).not.toHaveClass("dark");
 
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto('/quan-tri/bai-viet');
@@ -142,6 +145,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(editURL);
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
   let releasePreviewRequest: () => void = () => {};
   const previewRequest = new Promise<void>((resolve) => { releasePreviewRequest = resolve; });
   const previewPath = '**/admin/markdown/preview';
@@ -166,15 +170,27 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   expect((stackedPreviewBox?.y ?? 0) > (stackedMarkdownBox?.y ?? 0)).toBe(true);
 
   await page.goto(editURL);
-  await page.getByRole('button', { name: 'Lưu nháp' }).click();
-  await expect(page.locator('[data-editor-status]')).toHaveText('Đã lưu nháp.');
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await expect(page.locator("[data-editor-status]")).toHaveText("Đã lưu nháp.");
   const unpublished = await page.goto(`/bai-viet/${slug}`);
   expect(unpublished?.status()).toBe(404);
 
   await page.goto(editURL);
-  page.once('dialog', (dialog) => dialog.accept());
-  await page.getByRole('button', { name: 'Xóa vĩnh viễn' }).click();
-  await expect(page).toHaveURL('/quan-tri/bai-viet');
+  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  const deleteTrigger = page.getByRole("button", { name: "Xóa vĩnh viễn", exact: true });
+  await deleteTrigger.click();
+  const deleteDialog = page.getByRole("alertdialog");
+  await expect(deleteDialog).toBeVisible();
+  await expect(deleteDialog.getByRole("button", { name: "Hủy", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(deleteDialog).toBeHidden();
+  await deleteTrigger.click();
+  await deleteDialog.getByRole("button", { name: "Hủy", exact: true }).click();
+  await expect(deleteDialog).toBeHidden();
+  await deleteTrigger.click();
+  await deleteDialog.getByRole("button", { name: "Xóa vĩnh viễn", exact: true }).click();
+  await expect(page).toHaveURL("/quan-tri/bai-viet");
   for (const articleID of extraArticleIDs) {
     const response = await page.request.delete(`${apiBase}/admin/articles/${articleID}`);
     expect(response.status()).toBe(204);

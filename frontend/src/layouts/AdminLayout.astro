@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
-import ThemeToggle from '../components/ThemeToggle.astro';
+import ThemeToggle from '../components/ThemeToggle';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { site } from '../lib/site';
 
 interface Props { title: string }
@@ -14,7 +15,7 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width" />
     <meta name="robots" content="noindex,nofollow" />
     <title>{title} · Quản trị · {site.name}</title>
-    <script is:inline>try { const saved = localStorage.getItem('theme'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch {}</script>
+    <script is:inline>try { const saved = localStorage.getItem('theme'); const dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.classList.toggle('dark', dark); } catch {}</script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
@@ -22,11 +23,11 @@ const { title } = Astro.props;
       <div class="site-header__inner">
         <a class="site-name" href="/quan-tri/bai-viet">Quản trị bài viết</a>
         <nav class="site-nav" aria-label="Điều hướng quản trị"><a href="/quan-tri/bai-viet/moi" aria-current={Astro.url.pathname === '/quan-tri/bai-viet/moi' ? 'page' : undefined}>Bài viết mới</a></nav>
-        <ThemeToggle />
+        <ThemeToggle client:load />
       </div>
     </header>
     <main id="main-content" class="page-shell page-shell--wide" tabindex="-1">
-      <p class="admin-warning" role="status">Khu vực quản trị hiện chưa có xác thực. Không chia sẻ URL này trên môi trường công khai.</p>
+      <Alert className="admin-warning mb-8" role="status"><AlertTitle>Khu vực quản trị chưa có xác thực</AlertTitle><AlertDescription>Không chia sẻ URL này trên môi trường công khai.</AlertDescription></Alert>
       <slot />
     </main>
   </body>

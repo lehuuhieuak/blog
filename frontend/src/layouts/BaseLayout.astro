@@ -1,5 +1,5 @@
 ---
-import ThemeToggle from '../components/ThemeToggle.astro';
+import ThemeToggle from '../components/ThemeToggle';
 import { canonicalURL, site } from '../lib/site';
 import '../styles/global.css';
 
@@ -37,7 +37,7 @@ const isAbout = Astro.url.pathname === '/gioi-thieu';
     {socialImage && <meta name="twitter:image" content={socialImage} />}
     <title>{pageTitle}</title>
     <script is:inline>
-      try { const saved = localStorage.getItem('theme'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch {}
+      try { const saved = localStorage.getItem('theme'); const dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.classList.toggle('dark', dark); } catch {}
     </script>
   </head>
   <body>
@@ -46,7 +46,7 @@ const isAbout = Astro.url.pathname === '/gioi-thieu';
       <div class="site-header__inner">
         <a class="site-name" href="/" aria-current={isHome ? 'page' : undefined}>{site.name}</a>
         <nav class="site-nav" aria-label="Điều hướng chính"><a href="/gioi-thieu" aria-current={isAbout ? 'page' : undefined}>Giới thiệu</a></nav>
-        <ThemeToggle />
+        <ThemeToggle client:load />
       </div>
     </header>
     <main id="main-content" class:list={['page-shell', `page-shell--${width}`]} tabindex="-1"><slot /></main>

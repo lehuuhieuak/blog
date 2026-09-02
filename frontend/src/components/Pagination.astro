@@ -1,4 +1,12 @@
 ---
+import {
+  Pagination as PaginationRoot,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { pageHref, pageNumbers } from '../lib/pagination';
 
 interface Props {
@@ -11,15 +19,19 @@ const pages = pageNumbers(current, total);
 ---
 
 {total > 1 && (
-  <nav class="pagination" aria-label="Phân trang">
-    {current > 1
-      ? <a class="pagination__control" href={pageHref(pathname, current - 1)} rel="prev">← <span>Mới hơn</span></a>
-      : <span class="pagination__control pagination__control--placeholder" aria-hidden="true">← <span>Mới hơn</span></span>}
-    <ol>
-      {pages.map((page) => <li><a href={pageHref(pathname, page)} aria-current={page === current ? 'page' : undefined}>{page}</a></li>)}
-    </ol>
-    {current < total
-      ? <a class="pagination__control" href={pageHref(pathname, current + 1)} rel="next"><span>Cũ hơn</span> →</a>
-      : <span class="pagination__control pagination__control--placeholder" aria-hidden="true"><span>Cũ hơn</span> →</span>}
-  </nav>
+  <PaginationRoot className="pagination mt-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3" aria-label="Phân trang">
+    <div>
+      {current > 1
+        ? <PaginationPrevious href={pageHref(pathname, current - 1)} rel="prev" text="Mới hơn" aria-label="Đến trang mới hơn" />
+        : <span class="invisible inline-flex h-8 items-center" aria-hidden="true">Mới hơn</span>}
+    </div>
+    <PaginationContent>
+      {pages.map((page) => <PaginationItem><PaginationLink href={pageHref(pathname, page)} isActive={page === current}>{page}</PaginationLink></PaginationItem>)}
+    </PaginationContent>
+    <div class="justify-self-end">
+      {current < total
+        ? <PaginationNext href={pageHref(pathname, current + 1)} rel="next" text="Cũ hơn" aria-label="Đến trang cũ hơn" />
+        : <span class="invisible inline-flex h-8 items-center" aria-hidden="true">Cũ hơn</span>}
+    </div>
+  </PaginationRoot>
 )}
