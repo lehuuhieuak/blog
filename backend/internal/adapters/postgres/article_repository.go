@@ -49,7 +49,7 @@ func (r *Repository) executor(ctx context.Context) dbtx {
 	return r.pool
 }
 
-const articleSelect = `SELECT a.id, a.title, a.slug, a.excerpt, a.content_markdown, a.cover_image_url, a.status, a.published_at, a.created_at, a.updated_at,
+const articleSelect = `SELECT a.id, a.title, a.slug, a.excerpt, a.content_markdown, a.status, a.published_at, a.created_at, a.updated_at,
 COALESCE(jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name, 'slug', t.slug) ORDER BY t.slug) FILTER (WHERE t.id IS NOT NULL), '[]'::jsonb)
 FROM articles a
 LEFT JOIN article_tags at ON at.article_id = a.id
@@ -58,7 +58,7 @@ const articleGroup = ` GROUP BY a.id`
 
 func (r *Repository) Create(ctx context.Context, article *domain.Article) error {
 	exec := r.executor(ctx)
-	_, err := exec.Exec(ctx, `INSERT INTO articles (id, title, slug, excerpt, content_markdown, cover_image_url, status, published_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, article.ID, article.Title, article.Slug, article.Excerpt, article.ContentMarkdown, article.CoverImageURL, article.Status, article.PublishedAt, article.CreatedAt, article.UpdatedAt)
+	_, err := exec.Exec(ctx, `INSERT INTO articles (id, title, slug, excerpt, content_markdown, status, published_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, article.ID, article.Title, article.Slug, article.Excerpt, article.ContentMarkdown, article.Status, article.PublishedAt, article.CreatedAt, article.UpdatedAt)
 	if err != nil {
 		return mapError(err)
 	}
@@ -67,7 +67,7 @@ func (r *Repository) Create(ctx context.Context, article *domain.Article) error 
 
 func (r *Repository) Update(ctx context.Context, article *domain.Article) error {
 	exec := r.executor(ctx)
-	result, err := exec.Exec(ctx, `UPDATE articles SET title=$2, slug=$3, excerpt=$4, content_markdown=$5, cover_image_url=$6, status=$7, published_at=$8, updated_at=$9 WHERE id=$1`, article.ID, article.Title, article.Slug, article.Excerpt, article.ContentMarkdown, article.CoverImageURL, article.Status, article.PublishedAt, article.UpdatedAt)
+	result, err := exec.Exec(ctx, `UPDATE articles SET title=$2, slug=$3, excerpt=$4, content_markdown=$5, status=$6, published_at=$7, updated_at=$8 WHERE id=$1`, article.ID, article.Title, article.Slug, article.Excerpt, article.ContentMarkdown, article.Status, article.PublishedAt, article.UpdatedAt)
 	if err != nil {
 		return mapError(err)
 	}
@@ -200,7 +200,7 @@ type articleScanner interface{ Scan(...any) error }
 func scanArticle(row articleScanner) (*domain.Article, error) {
 	article := &domain.Article{}
 	var tagsJSON []byte
-	if err := row.Scan(&article.ID, &article.Title, &article.Slug, &article.Excerpt, &article.ContentMarkdown, &article.CoverImageURL, &article.Status, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt, &tagsJSON); err != nil {
+	if err := row.Scan(&article.ID, &article.Title, &article.Slug, &article.Excerpt, &article.ContentMarkdown, &article.Status, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt, &tagsJSON); err != nil {
 		return nil, mapError(err)
 	}
 	if err := json.Unmarshal(tagsJSON, &article.Tags); err != nil {

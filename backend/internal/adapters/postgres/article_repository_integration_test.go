@@ -42,12 +42,22 @@ func TestRepositoryArticleLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
-	migration, err := os.ReadFile(filepath.Join("..", "..", "..", "migrations", "000001_initial.sql"))
-	if err != nil {
+	for _, name := range []string{"000001_initial.sql", "000002_drop_cover_image_url.sql"} {
+		migration, err := os.ReadFile(filepath.Join("..", "..", "..", "migrations", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, string(migration)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var coverImageColumn bool
+	if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'articles' AND column_name = 'cover_image_url')`).Scan(&coverImageColumn); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, string(migration)); err != nil {
-		t.Fatal(err)
+	if coverImageColumn {
+		t.Fatal("cover_image_url column still exists")
 	}
 
 	repository := NewRepository(pool)

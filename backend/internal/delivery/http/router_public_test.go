@@ -2,11 +2,11 @@ package deliveryhttp
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +33,19 @@ func TestPublicArticleUsesDataEnvelope(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/articles/published", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
-	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"data":{"id":"article-1"`) {
+	if response.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if string(body.Data["id"]) != `"article-1"` {
+		t.Fatalf("id = %s", body.Data["id"])
+	}
+	if _, exists := body.Data["cover_image_url"]; exists {
+		t.Fatal("response unexpectedly includes cover_image_url")
 	}
 }

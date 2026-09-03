@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -22,7 +21,6 @@ type Article struct {
 	Slug            string        `json:"slug"`
 	Excerpt         string        `json:"excerpt"`
 	ContentMarkdown string        `json:"content_markdown"`
-	CoverImageURL   *string       `json:"cover_image_url"`
 	Status          ArticleStatus `json:"status"`
 	PublishedAt     *time.Time    `json:"published_at"`
 	CreatedAt       time.Time     `json:"created_at"`
@@ -35,7 +33,6 @@ type ArticleValues struct {
 	Slug            string
 	Excerpt         string
 	ContentMarkdown string
-	CoverImageURL   *string
 	Status          ArticleStatus
 	Tags            []Tag
 }
@@ -73,19 +70,6 @@ func (a *Article) apply(values ArticleValues, now time.Time, existing bool) erro
 	if values.Status != StatusDraft && values.Status != StatusPublished {
 		fields["status"] = "status must be draft or published"
 	}
-	if values.CoverImageURL != nil {
-		cover := strings.TrimSpace(*values.CoverImageURL)
-		if cover == "" {
-			values.CoverImageURL = nil
-		} else {
-			parsed, err := url.ParseRequestURI(cover)
-			if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-				fields["cover_image_url"] = "cover_image_url must be an http or https URL"
-			} else {
-				values.CoverImageURL = &cover
-			}
-		}
-	}
 	if err := NewValidationError(fields); err != nil {
 		return err
 	}
@@ -97,7 +81,6 @@ func (a *Article) apply(values ArticleValues, now time.Time, existing bool) erro
 	a.Slug = values.Slug
 	a.Excerpt = values.Excerpt
 	a.ContentMarkdown = values.ContentMarkdown
-	a.CoverImageURL = values.CoverImageURL
 	a.Status = values.Status
 	a.Tags = append([]Tag(nil), values.Tags...)
 	if values.Status == StatusPublished && a.PublishedAt == nil {

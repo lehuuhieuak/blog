@@ -17,7 +17,6 @@ export interface ArticleSummary {
   title: string;
   slug: string;
   excerpt: string;
-  cover_image_url: string | null;
   status: ArticleStatus;
   published_at: string | null;
   created_at: string;
@@ -40,7 +39,6 @@ export interface ArticleInput {
   slug: string;
   excerpt: string;
   content_markdown: string;
-  cover_image_url: string | null;
   tags: string[];
   status: ArticleStatus;
 }

@@ -204,7 +204,6 @@ type articleResponse struct {
 	Excerpt         string                `json:"excerpt"`
 	ContentMarkdown string                `json:"content_markdown,omitempty"`
 	ContentHTML     string                `json:"content_html,omitempty"`
-	CoverImageURL   *string               `json:"cover_image_url"`
 	Status          domain.ArticleStatus  `json:"status,omitempty"`
 	PublishedAt     *time.Time            `json:"published_at"`
 	CreatedAt       time.Time             `json:"created_at"`
@@ -215,7 +214,7 @@ type articleResponse struct {
 }
 
 func baseArticle(article *domain.Article) articleResponse {
-	return articleResponse{ID: article.ID, Title: article.Title, Slug: article.Slug, Excerpt: article.Excerpt, Status: article.Status, CoverImageURL: article.CoverImageURL, PublishedAt: utc(article.PublishedAt), CreatedAt: article.CreatedAt.UTC(), UpdatedAt: article.UpdatedAt.UTC(), Tags: article.Tags}
+	return articleResponse{ID: article.ID, Title: article.Title, Slug: article.Slug, Excerpt: article.Excerpt, Status: article.Status, PublishedAt: utc(article.PublishedAt), CreatedAt: article.CreatedAt.UTC(), UpdatedAt: article.UpdatedAt.UTC(), Tags: article.Tags}
 }
 func adminArticle(article *domain.Article) articleResponse {
 	response := baseArticle(article)

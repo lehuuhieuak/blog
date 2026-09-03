@@ -108,7 +108,6 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
         slug: `bai-phan-trang-${unique}-${index}`,
         excerpt: 'Bài viết tạo trong E2E để kiểm tra phân trang.',
         content_markdown: '# Phân trang',
-        cover_image_url: null,
         tags: [],
         status: 'published',
       },

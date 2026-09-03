@@ -27,8 +27,7 @@ import type { AdminArticle, ArticleInput, MarkdownPreview } from "@/features/art
 type Action = "preview" | "draft" | "published" | "delete"
 type ArticleStatus = ArticleInput["status"]
 
-type EditorFields = Omit<ArticleInput, "tags" | "cover_image_url" | "status"> & {
-  cover_image_url: string
+type EditorFields = Omit<ArticleInput, "tags" | "status"> & {
   tags: string
 }
 
@@ -67,7 +66,6 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     slug: article?.slug ?? "",
     excerpt: article?.excerpt ?? "",
     content_markdown: article?.content_markdown ?? "",
-    cover_image_url: article?.cover_image_url ?? "",
     tags: article?.tags.map((tag) => tag.name).join(", ") ?? "",
   }))
   const [manuallyEditedSlug, setManuallyEditedSlug] = useState(Boolean(article?.slug))
@@ -103,7 +101,6 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     slug: fields.slug,
     excerpt: fields.excerpt,
     content_markdown: fields.content_markdown,
-    cover_image_url: fields.cover_image_url || null,
     tags: fields.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     status: articleStatus,
   })
@@ -222,17 +219,6 @@ export default function ArticleEditor({ article, apiBase }: Props) {
         <div className="grid gap-2 md:col-span-2">
           <Label htmlFor="excerpt">Tóm tắt</Label>
           <Textarea id="excerpt" name="excerpt" required value={fields.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="cover-image-url">URL ảnh bìa</Label>
-          <Input
-            id="cover-image-url"
-            name="cover_image_url"
-            type="url"
-            placeholder="https://example.com/anh-bia.jpg"
-            value={fields.cover_image_url}
-            onChange={(event) => updateField("cover_image_url", event.target.value)}
-          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="tags">Thẻ <span id="tags-note" className="font-normal text-muted-foreground">(ngăn cách bằng dấu phẩy)</span></Label>

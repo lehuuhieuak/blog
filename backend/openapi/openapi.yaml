@@ -111,7 +111,6 @@ components:
         slug: { type: string, example: tieu-de }
         excerpt: { type: string, example: Mô tả ngắn }
         content_markdown: { type: string, example: '# Nội dung' }
-        cover_image_url: { type: [string, 'null'], format: uri }
         tags: { type: array, items: { type: string }, example: [Golang, Backend] }
         status: { type: string, enum: [draft, published] }
     Tag:
@@ -126,7 +125,6 @@ components:
         title: { type: string }
         slug: { type: string }
         excerpt: { type: string }
-        cover_image_url: { type: [string, 'null'], format: uri }
         status: { type: string, enum: [draft, published] }
         published_at: { type: [string, 'null'], format: date-time }
         created_at: { type: string, format: date-time }

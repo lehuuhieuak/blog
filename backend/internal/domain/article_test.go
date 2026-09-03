@@ -45,7 +45,6 @@ func TestNewArticleValidation(t *testing.T) {
 	}{
 		{"missing title", ArticleValues{Slug: "slug", Excerpt: "x", ContentMarkdown: "x", Status: StatusDraft}, "title"},
 		{"bad slug", ArticleValues{Title: "x", Slug: "Sai slug", Excerpt: "x", ContentMarkdown: "x", Status: StatusDraft}, "slug"},
-		{"unsafe cover", ArticleValues{Title: "x", Slug: "slug", Excerpt: "x", ContentMarkdown: "x", CoverImageURL: stringPtr("javascript:alert(1)"), Status: StatusDraft}, "cover_image_url"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,5 +56,3 @@ func TestNewArticleValidation(t *testing.T) {
 		})
 	}
 }
-
-func stringPtr(value string) *string { return &value }

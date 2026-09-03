@@ -38,7 +38,6 @@ type ArticleInput struct {
 	Slug            string               `json:"slug"`
 	Excerpt         string               `json:"excerpt"`
 	ContentMarkdown string               `json:"content_markdown"`
-	CoverImageURL   *string              `json:"cover_image_url"`
 	Tags            []string             `json:"tags"`
 	Status          domain.ArticleStatus `json:"status"`
 }
@@ -67,7 +66,7 @@ func (s *ArticleService) Create(ctx context.Context, input ArticleInput) (*domai
 	if err != nil {
 		return nil, err
 	}
-	article, err := domain.NewArticle(s.newID(), domain.ArticleValues{Title: input.Title, Slug: slug, Excerpt: input.Excerpt, ContentMarkdown: input.ContentMarkdown, CoverImageURL: input.CoverImageURL, Status: input.Status, Tags: tags}, s.clock())
+	article, err := domain.NewArticle(s.newID(), domain.ArticleValues{Title: input.Title, Slug: slug, Excerpt: input.Excerpt, ContentMarkdown: input.ContentMarkdown, Status: input.Status, Tags: tags}, s.clock())
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +105,7 @@ func (s *ArticleService) Update(ctx context.Context, id string, input ArticleInp
 			return nil, err
 		}
 	}
-	err = article.Update(domain.ArticleValues{Title: input.Title, Slug: slug, Excerpt: input.Excerpt, ContentMarkdown: input.ContentMarkdown, CoverImageURL: input.CoverImageURL, Status: input.Status, Tags: tags}, s.clock())
+	err = article.Update(domain.ArticleValues{Title: input.Title, Slug: slug, Excerpt: input.Excerpt, ContentMarkdown: input.ContentMarkdown, Status: input.Status, Tags: tags}, s.clock())
 	if err != nil {
 		return nil, err
 	}

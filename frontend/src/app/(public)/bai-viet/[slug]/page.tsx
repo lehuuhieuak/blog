@@ -25,13 +25,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const article = await loadArticle(slug)
   if (!article) return { title: "Không tìm thấy" }
   const canonical = canonicalURL(`/bai-viet/${article.slug}`)
-  const image = article.cover_image_url ?? undefined
   return {
     title: article.title,
     description: article.excerpt,
     alternates: { canonical },
-    openGraph: { type: "article", url: canonical, title: article.title, description: article.excerpt, images: image ? [image] : undefined },
-    twitter: { card: image ? "summary_large_image" : "summary", title: article.title, description: article.excerpt, images: image ? [image] : undefined },
+    openGraph: { type: "article", url: canonical, title: article.title, description: article.excerpt },
+    twitter: { card: "summary", title: article.title, description: article.excerpt },
   }
 }
 
@@ -51,8 +50,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     dateModified: article.updated_at,
     mainEntityOfPage: canonicalURL(`/bai-viet/${article.slug}`),
     author: { "@type": "Person", name: site.author },
-    image: article.cover_image_url ?? undefined,
   }).replace(/</g, "\\u003c")
 
-  return <PageShell width="wide"><div className="article-layout">{tableOfContents.length > 0 && <ArticleTOC items={tableOfContents} collapsible />}{/* HTML is sanitized by the backend renderer before it reaches the frontend. */}<article><header className="article-header"><p className="eyebrow">{article.published_at && <time dateTime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p><h1>{article.title}</h1><p className="article-excerpt">{article.excerpt}</p>{article.tags.length > 0 && <ul className="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li key={tag.id}><a href={`/the/${tag.slug}`}><Badge variant="outline">#{tag.name}</Badge></a></li>)}</ul>}{isUpdated && <p className="article-list__meta">Cập nhật: <time dateTime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}</header>{article.cover_image_url && <img className="article-cover" src={article.cover_image_url} alt="" />}<div className="article-content" dangerouslySetInnerHTML={{ __html: article.content_html }} /></article>{tableOfContents.length > 0 && <aside className="article-layout__toc"><ArticleTOC items={tableOfContents} /></aside>}</div>{tableOfContents.length > 0 && <TOCScrollSpy />}<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLD }} /></PageShell>
+  return <PageShell width="wide"><div className="article-layout">{tableOfContents.length > 0 && <ArticleTOC items={tableOfContents} collapsible />}{/* HTML is sanitized by the backend renderer before it reaches the frontend. */}<article><header className="article-header"><p className="eyebrow">{article.published_at && <time dateTime={article.published_at}>{formatter.format(new Date(article.published_at))}</time>} · {article.reading_minutes} phút đọc</p><h1>{article.title}</h1><p className="article-excerpt">{article.excerpt}</p>{article.tags.length > 0 && <ul className="tag-list" aria-label="Thẻ">{article.tags.map((tag) => <li key={tag.id}><a href={`/the/${tag.slug}`}><Badge variant="outline">#{tag.name}</Badge></a></li>)}</ul>}{isUpdated && <p className="article-list__meta">Cập nhật: <time dateTime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time></p>}</header><div className="article-content" dangerouslySetInnerHTML={{ __html: article.content_html }} /></article>{tableOfContents.length > 0 && <aside className="article-layout__toc"><ArticleTOC items={tableOfContents} /></aside>}</div>{tableOfContents.length > 0 && <TOCScrollSpy />}<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLD }} /></PageShell>
 }

@@ -33,7 +33,6 @@ Domain và application không được phụ thuộc vào Gin, pgx hoặc chi ti
 - `slug`: duy nhất, dùng trong URL.
 - `excerpt`: mô tả ngắn và SEO description.
 - `content_markdown`: nội dung Markdown gốc.
-- `cover_image_url`: URL ảnh bìa, cho phép null.
 - `status`: `draft` hoặc `published`.
 - `published_at`: thời điểm xuất bản đầu tiên, cho phép null.
 - `created_at`, `updated_at`: timestamp có timezone.
@@ -60,7 +59,6 @@ Domain và application không được phụ thuộc vào Gin, pgx hoặc chi ti
 - Slug tự sinh bị trùng sẽ được thêm hậu tố số; slug nhập thủ công bị trùng trả về HTTP `409`.
 - Slug không được đổi sau lần xuất bản đầu tiên nhằm bảo vệ liên kết SEO.
 - Xóa bài là xóa vĩnh viễn, giao diện phải yêu cầu xác nhận trước khi gọi API.
-- Cover image chỉ chấp nhận URL `http` hoặc `https`.
 - Bài viết được sắp xếp theo `published_at` giảm dần.
 - Phân trang mặc định 10 bài/trang và giới hạn tối đa 50 bài/trang.
 
@@ -111,7 +109,6 @@ Trang bài viết hiển thị:
 
 - Tiêu đề, excerpt, ngày đăng và ngày cập nhật nếu cần.
 - Thời gian đọc và danh sách thẻ.
-- Ảnh bìa tùy chọn.
 - Nội dung Markdown đã render.
 - Mục lục từ `h2` và `h3`.
 
@@ -128,7 +125,6 @@ Editor gồm:
 - Tiêu đề.
 - Slug tự sinh nhưng cho phép chỉnh khi bài chưa từng xuất bản.
 - Excerpt.
-- Cover image URL.
 - Danh sách tag nhập bằng dấu phẩy.
 - Markdown textarea và preview.
 - Các hành động lưu nháp, xuất bản, cập nhật, gỡ xuất bản và xóa.
@@ -154,7 +150,6 @@ Route quản lý không được liên kết từ navigation công khai.
 
 - Mọi trang bài viết được render thành HTML phía server.
 - Canonical URL dựa trên biến môi trường `SITE_URL`.
-- Metadata động từ title, excerpt và cover image.
 - Open Graph và Twitter card.
 - Article JSON-LD cho mỗi bài đã xuất bản.
 - Semantic heading structure.
@@ -195,7 +190,6 @@ Payload tạo/cập nhật bài gồm:
   "slug": "tieu-de",
   "excerpt": "Mô tả ngắn",
   "content_markdown": "# Nội dung",
-  "cover_image_url": "https://example.com/image.jpg",
   "tags": ["Golang", "Backend"],
   "status": "draft"
 }

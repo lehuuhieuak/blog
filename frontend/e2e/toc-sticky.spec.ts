@@ -24,7 +24,6 @@ test('TOC stays within the article and highlights the heading at the reading mar
       data: {
         ...article,
         excerpt: 'Bài viết dùng để kiểm tra mục lục sticky.',
-        cover_image_url: null,
         tags: [],
         status: 'published',
       },
