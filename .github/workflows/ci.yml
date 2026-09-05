@@ -1,8 +1,11 @@
-name: CI
+name: CI and deploy
 
 on:
   push:
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   backend:
@@ -69,3 +72,186 @@ jobs:
       - name: Stop stack
         if: always()
         run: docker compose down --volumes --remove-orphans
+
+  production-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate production Compose contract
+        run: bash scripts/validate-production-compose.sh
+      - name: Test deployment rollback without a Docker daemon
+        run: bash scripts/test-deploy-production.sh
+
+  publish:
+    name: Publish immutable production images
+    needs: [backend, frontend, docker-e2e, production-compose]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api_image: ${{ steps.images.outputs.api_image }}
+      migrate_image: ${{ steps.images.outputs.migrate_image }}
+      web_image: ${{ steps.images.outputs.web_image }}
+    env:
+      REGISTRY: ghcr.io
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate public site configuration
+        env:
+          PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_NAME: ${{ vars.SITE_NAME }}
+          SITE_AUTHOR: ${{ vars.SITE_AUTHOR }}
+          SITE_DESCRIPTION: ${{ vars.SITE_DESCRIPTION }}
+        run: |
+          test -n "$PUBLIC_API_URL"
+          test -n "$SITE_URL"
+          test -n "$SITE_NAME"
+          test -n "$SITE_AUTHOR"
+          test -n "$SITE_DESCRIPTION"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate API image metadata
+        id: api-meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/api
+          tags: type=raw,value=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Generate migration image metadata
+        id: migrate-meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/migrate
+          tags: type=raw,value=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Generate web image metadata
+        id: web-meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/web
+          tags: type=raw,value=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      - name: Build and push API image
+        id: push-api
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./backend
+          target: api
+          push: true
+          tags: ${{ steps.api-meta.outputs.tags }}
+          labels: ${{ steps.api-meta.outputs.labels }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Build and push migration image
+        id: push-migrate
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./backend
+          target: migrate
+          push: true
+          tags: ${{ steps.migrate-meta.outputs.tags }}
+          labels: ${{ steps.migrate-meta.outputs.labels }}
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,mode=max,scope=migrate
+      - name: Build and push web image
+        id: push-web
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./frontend
+          target: web
+          push: true
+          tags: ${{ steps.web-meta.outputs.tags }}
+          labels: ${{ steps.web-meta.outputs.labels }}
+          build-args: |
+            API_URL=http://api:8080/api/v1
+            PUBLIC_API_URL=${{ vars.PUBLIC_API_URL }}
+            SITE_URL=${{ vars.SITE_URL }}
+            SITE_NAME=${{ vars.SITE_NAME }}
+            SITE_AUTHOR=${{ vars.SITE_AUTHOR }}
+            SITE_DESCRIPTION=${{ vars.SITE_DESCRIPTION }}
+            SITE_SOCIAL_URL=${{ vars.SITE_SOCIAL_URL }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: Record image digests
+        id: images
+        env:
+          API_DIGEST: ${{ steps.push-api.outputs.digest }}
+          MIGRATE_DIGEST: ${{ steps.push-migrate.outputs.digest }}
+          WEB_DIGEST: ${{ steps.push-web.outputs.digest }}
+        run: |
+          {
+            echo "api_image=${REGISTRY}/${GITHUB_REPOSITORY}/api@${API_DIGEST}"
+            echo "migrate_image=${REGISTRY}/${GITHUB_REPOSITORY}/migrate@${MIGRATE_DIGEST}"
+            echo "web_image=${REGISTRY}/${GITHUB_REPOSITORY}/web@${WEB_DIGEST}"
+          } >> "$GITHUB_OUTPUT"
+
+  deploy-production:
+    name: Deploy production
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Configure pinned SSH host key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Deploy published digests
+        id: deploy
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          API_IMAGE: ${{ needs.publish.outputs.api_image }}
+          MIGRATE_IMAGE: ${{ needs.publish.outputs.migrate_image }}
+          WEB_IMAGE: ${{ needs.publish.outputs.web_image }}
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_PORT"
+          test -n "$SSH_USER"
+          deploy_output="$(ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" -- /usr/local/bin/minimal-blog-deploy "$GITHUB_SHA" "$API_IMAGE" "$MIGRATE_IMAGE" "$WEB_IMAGE")"
+          printf '%s\n' "$deploy_output" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Write deployment summary
+        env:
+          API_IMAGE: ${{ needs.publish.outputs.api_image }}
+          MIGRATE_IMAGE: ${{ needs.publish.outputs.migrate_image }}
+          WEB_IMAGE: ${{ needs.publish.outputs.web_image }}
+        run: |
+          {
+            echo '### Production deployment'
+            echo
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- API: \`$API_IMAGE\`"
+            echo "- Migrate: \`$MIGRATE_IMAGE\`"
+            echo "- Web: \`$WEB_IMAGE\`"
+            echo '- Healthchecks: passed on the production server.'
+          } >> "$GITHUB_STEP_SUMMARY"
