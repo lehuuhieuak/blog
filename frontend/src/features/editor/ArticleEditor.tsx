@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FieldGroup } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminArticle, ArticleInput, MarkdownPreview } from "@/features/article/types"
@@ -166,7 +167,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
   })
 
   return (
-    <form className="editor grid gap-6" aria-busy={!hydrated || isBusy} data-editor-ready={hydrated ? "true" : undefined} noValidate>
+    <form className="grid gap-6" data-editor aria-busy={!hydrated || isBusy} data-editor-ready={hydrated ? "true" : undefined} noValidate>
       {status.kind === "error" ? (
         <Alert data-editor-status variant="destructive" role="alert">
           <AlertTitle>Lỗi</AlertTitle>
@@ -178,7 +179,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
         </p>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <FieldGroup className="grid gap-5 md:grid-cols-2">
         <div className="grid gap-2 md:col-span-2">
           <Label htmlFor="title">Tiêu đề</Label>
           <Input
@@ -224,9 +225,9 @@ export default function ArticleEditor({ article, apiBase }: Props) {
           <Label htmlFor="tags">Thẻ <span id="tags-note" className="font-normal text-muted-foreground">(ngăn cách bằng dấu phẩy)</span></Label>
           <Input id="tags" name="tags" aria-describedby="tags-note" value={fields.tags} onChange={(event) => updateField("tags", event.target.value)} />
         </div>
-      </div>
+      </FieldGroup>
 
-      <div className="editor-workspace grid gap-6">
+      <div className="grid gap-6 min-[68rem]:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="content-markdown">Nội dung Markdown</Label>
           <Textarea

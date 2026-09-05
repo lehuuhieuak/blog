@@ -54,7 +54,6 @@ export default function ThemeToggle() {
 
   return (
     <Button
-      className="theme-toggle"
       type="button"
       variant="ghost"
       size="icon-lg"

@@ -1,7 +1,9 @@
+"use client"
+
 import * as React from "react"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
-import { staticButtonClass, type StaticButtonSize } from "@/components/ui/server-button-styles"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
@@ -16,10 +18,10 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />
 }
 
-type PaginationLinkProps = { isActive?: boolean; size?: StaticButtonSize } & React.ComponentProps<"a">
+type PaginationLinkProps = { isActive?: boolean; size?: "default" | "icon" } & React.ComponentProps<"a">
 
-function PaginationLink({ className, isActive, size = "icon", ...props }: PaginationLinkProps) {
-  return <a aria-current={isActive ? "page" : undefined} data-slot="pagination-link" data-active={isActive} className={staticButtonClass(isActive ? "outline" : "ghost", size, className)} {...props} />
+function PaginationLink({ className, isActive, size = "icon", href, children, ...props }: PaginationLinkProps) {
+  return <Button aria-current={isActive ? "page" : undefined} data-active={isActive} data-slot="pagination-link" render={<a href={href} {...props} />} variant={isActive ? "outline" : "ghost"} size={size} className={className}>{children}</Button>
 }
 
 function PaginationPrevious({ className, text = "Previous", ...props }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {

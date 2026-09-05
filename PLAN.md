@@ -5,7 +5,7 @@
 - Monorepo gồm `backend/`, `frontend/` và `compose.yaml`.
 - Backend: Go 1.27, Gin, PostgreSQL 18, `pgx/v5`, theo Clean Architecture.
 - Frontend: Next.js 16.3.4 App Router, TypeScript, React 19, Tailwind CSS 4 và shadcn/ui (Base UI), Node.js 24 LTS.
-- Server Components là mặc định để trang nội dung tiếp tục SSR với JavaScript tối thiểu; chỉ theme toggle và editor quản trị là Client Components. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
+- Server Components là mặc định để dữ liệu và nội dung bài viết tiếp tục SSR. Các primitive shadcn/Base UI có tương tác ở public UI (navigation, link button, mục lục) được dùng như client islands nhỏ; chúng không tự fetch dữ liệu hoặc biến trang công khai thành SPA. Tailwind CSS 4 và shadcn/ui là lớp UI chính.
 - Docker Compose chạy PostgreSQL, migration, API và Next.js frontend.
 
 Next.js được chọn để chuẩn hóa frontend trên React/Next.js trong khi vẫn giữ SSR và Server Components cho website thiên về nội dung. Điều này giữ SEO tốt, giao diện tối giản và trải nghiệm đọc tập trung mà không chuyển trang công khai thành SPA.
@@ -92,7 +92,7 @@ Frontend dùng feature-based architecture:
 - `lib`: site config, HTTP client và utilities.
 - `styles`: CSS variables, typography và global styles.
 
-Next.js chạy bằng App Router và `output: "standalone"`. Các trang công khai, metadata, danh sách, phân trang và nội dung tĩnh là Server Components; theme toggle và editor là Client Components. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
+Next.js chạy bằng App Router và `output: "standalone"`. Các trang công khai, metadata, danh sách và nội dung tĩnh tiếp tục lấy dữ liệu và render trên server. Theme toggle, editor và các primitive shadcn/Base UI cần tương tác chạy như client islands, chỉ nhận props đã serializable từ Server Components; không có client-side data fetching hay React SPA cho trang công khai.
 
 ### 3.2. Route công khai
 
@@ -143,7 +143,7 @@ Route quản lý không được liên kết từ navigation công khai.
 - Theme sáng/tối dùng semantic CSS variables của shadcn/ui với `.dark` là selector.
 - Mặc định theo theme hệ thống; theme toggle React island lưu `light`/`dark` theo key `theme` trong `localStorage`.
 - Có inline script nhỏ để tránh nháy sai theme khi tải trang.
-- Trang bài viết vẫn render nội dung hoàn toàn bằng SSR; một script nhỏ không dùng framework chỉ đồng bộ trạng thái active của link mục lục với heading `h2`/`h3` đã đi qua mốc đọc 6rem. Script không đổi fragment, URL, focus hoặc trạng thái mở/đóng của mục lục mobile.
+- Trang bài viết vẫn render nội dung hoàn toàn bằng SSR; mục lục mobile dùng Accordion shadcn do người đọc tự mở/đóng. Một script nhỏ không dùng framework chỉ đồng bộ trạng thái active của link mục lục với heading `h2`/`h3` đã đi qua mốc đọc 6rem. Script không đổi fragment, URL, focus hoặc trạng thái mở/đóng của mục lục mobile.
 - Tên blog, tác giả, mô tả và liên kết xã hội nằm trong một file cấu hình trung tâm với giá trị mẫu dễ thay đổi.
 
 ### 3.5. SEO

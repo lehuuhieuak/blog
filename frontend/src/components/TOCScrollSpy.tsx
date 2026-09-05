@@ -17,7 +17,7 @@ const script = `(function () {
     activeID = nextActiveID;
     for (const link of tocLinks) {
       const isActive = link.dataset.tocTarget === activeID;
-      link.classList.toggle('toc__link--active', isActive);
+      link.toggleAttribute('data-active', isActive);
       if (isActive) link.setAttribute('aria-current', 'location');
       else link.removeAttribute('aria-current');
     }

@@ -15,7 +15,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
 
   await page.goto('/quan-tri/bai-viet/moi');
   await expect(page.locator("meta[name=robots]")).toHaveAttribute("content", /noindex/);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByLabel('Tiêu đề').fill(title);
   await page.locator('input[name="slug"]').fill(slug);
   await page.getByLabel('Tóm tắt').fill('Mô tả dùng để xác minh luồng xuất bản.');
@@ -32,7 +32,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await expect(page.getByRole('link', { name: title })).toHaveCount(0);
 
   await page.goto(editURL);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByRole('button', { name: 'Xem trước' }).click();
   await expect(page.locator('[data-preview-content]')).toContainText('Phần xem trước');
   await Promise.all([
@@ -49,7 +49,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await expect(page.getByRole('link', { name: title })).toBeVisible();
 
   await page.goto(editURL);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   const slugInput = page.locator('input[name="slug"]');
   await expect(slugInput).toBeDisabled();
   await expect(slugInput).toHaveValue(slug);
@@ -74,18 +74,18 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     await page.goto(`/bai-viet/${slug}`);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
     if (viewport.desktopTOC) {
-      await expect(page.locator('.toc--desktop')).toBeVisible();
-      await expect(page.locator('.toc--compact')).toBeHidden();
+      await expect(page.locator('[data-toc-desktop]')).toBeVisible();
+      await expect(page.locator('[data-toc-mobile]')).toBeHidden();
       expect(await page.locator('.article-content').evaluate((element) => element.getBoundingClientRect().width)).toBeLessThanOrEqual(768);
     } else {
-      await expect(page.locator('.toc--desktop')).toBeHidden();
-      await expect(page.locator('.toc--compact > summary')).toBeVisible();
+      await expect(page.locator('[data-toc-desktop]')).toBeHidden();
+      await expect(page.locator('[data-toc-mobile] [data-slot="accordion-trigger"]')).toBeVisible();
       if (viewport.width === 375) {
-        const tocSummary = page.locator('.toc--compact > summary');
+        const tocSummary = page.locator('[data-toc-mobile] [data-slot="accordion-trigger"]');
         await tocSummary.focus();
         await expect(tocSummary).toBeFocused();
         await tocSummary.press('Enter');
-        await expect(page.locator('.toc--compact')).toHaveAttribute('open', '');
+        await expect(tocSummary).toHaveAttribute('aria-expanded', 'true');
       }
     }
   }
@@ -151,12 +151,12 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto('/quan-tri/bai-viet');
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
-  await page.locator('.admin-table-scroll').focus();
-  await expect(page.locator('.admin-table-scroll')).toBeFocused();
+  await page.locator('[data-slot="table"]').focus();
+  await expect(page.locator('[data-slot="table"]')).toBeFocused();
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(editURL);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   let releasePreviewRequest: () => void = () => {};
   const previewRequest = new Promise<void>((resolve) => { releasePreviewRequest = resolve; });
   const previewPath = '**/admin/markdown/preview';
@@ -166,7 +166,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   });
   const previewButton = page.locator('[data-action="preview"]');
   await previewButton.click();
-  await expect(page.locator('.editor')).toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('aria-busy', 'true');
   await expect(previewButton).toBeDisabled();
   releasePreviewRequest();
   await expect(page.locator('[data-preview]')).toBeVisible();
@@ -181,14 +181,14 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
   expect((stackedPreviewBox?.y ?? 0) > (stackedMarkdownBox?.y ?? 0)).toBe(true);
 
   await page.goto(editURL);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   await page.getByRole("button", { name: "Lưu nháp" }).click();
   await expect(page.locator("[data-editor-status]")).toHaveText("Đã lưu nháp.");
   const unpublished = await page.goto(`/bai-viet/${slug}`);
   expect(unpublished?.status()).toBe(404);
 
   await page.goto(editURL);
-  await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
+  await expect(page.locator('form[data-editor]')).toHaveAttribute('data-editor-ready', 'true');
   const deleteTrigger = page.getByRole("button", { name: "Xóa vĩnh viễn", exact: true });
   await deleteTrigger.click();
   const deleteDialog = page.getByRole("alertdialog");

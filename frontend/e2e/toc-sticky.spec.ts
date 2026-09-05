@@ -50,16 +50,17 @@ test('TOC stays within the article and highlights the heading at the reading mar
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/bai-viet/${longArticleSlug}`);
 
-    const toc = page.locator('.toc--desktop');
-    const sidebar = page.locator('.article-layout__toc');
+    const toc = page.locator('[data-toc-desktop]');
+    const tocViewport = toc.locator('[data-slot="scroll-area-viewport"]');
+    const sidebar = page.locator('[data-toc-sidebar]');
     await expect(toc).toBeVisible();
     await expect(sidebar).toBeVisible();
     await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(0);
-    expect(await toc.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
-    expect(await toc.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
+    expect(await tocViewport.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+    expect(await tocViewport.evaluate((element) => getComputedStyle(element).overflowY)).toBe('scroll');
 
     await page.evaluate(() => {
-      const article = document.querySelector('.article-layout > article');
+      const article = document.querySelector('[data-article-layout] > article');
       if (!article) throw new Error('Article is missing');
       window.scrollTo({ top: article.getBoundingClientRect().top + window.scrollY + 1000 });
     });
@@ -73,7 +74,7 @@ test('TOC stays within the article and highlights the heading at the reading mar
       window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - readingMarker + 8 });
     });
     await expect(toc.locator('[data-toc-target="chi-tiet-phan-10"]')).toHaveAttribute('aria-current', 'location');
-    await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(2);
+    await expect(page.locator('[data-toc-link][aria-current="location"]')).toHaveCount(1);
     expect(page.url()).toBe(articleURL);
 
     await page.evaluate(() => window.scrollTo({ top: 0 }));
@@ -89,10 +90,10 @@ test('TOC stays within the article and highlights the heading at the reading mar
     await expect(page).toHaveURL(/#chi-tiet-phan-20$/);
     await expect(fragmentTOCLink).toHaveAttribute('aria-current', 'location');
 
-    await page.locator('.site-footer').scrollIntoViewIfNeeded();
+    await page.locator('[data-site-footer]').scrollIntoViewIfNeeded();
     const endPositions = await page.evaluate(() => {
-      const tocElement = document.querySelector('.toc--desktop');
-      const footer = document.querySelector('.site-footer');
+      const tocElement = document.querySelector('[data-toc-desktop]');
+      const footer = document.querySelector('[data-site-footer]');
       if (!tocElement || !footer) throw new Error('TOC or footer is missing');
       return {
         footerTop: footer.getBoundingClientRect().top,
@@ -103,23 +104,22 @@ test('TOC stays within the article and highlights the heading at the reading mar
 
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto(`/bai-viet/${longArticleSlug}`);
-    const compactTOC = page.locator('.toc--compact');
-    await expect(compactTOC).not.toHaveAttribute('open', '');
+    const compactTOC = page.locator('[data-toc-mobile]');
+    await expect(compactTOC.locator('[data-slot="accordion-trigger"]')).toHaveAttribute('aria-expanded', 'false');
     await page.evaluate(() => {
       const heading = document.getElementById('phan-noi-dung-10');
       if (!heading) throw new Error('Heading is missing');
       const readingMarker = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 6;
       window.scrollTo({ top: window.scrollY + heading.getBoundingClientRect().top - readingMarker + 8 });
     });
-    await expect(compactTOC).not.toHaveAttribute('open', '');
+    await expect(compactTOC.locator('[data-slot="accordion-trigger"]')).toHaveAttribute('aria-expanded', 'false');
     const activeCompactLink = compactTOC.locator('[data-toc-target="phan-noi-dung-10"]');
-    await expect(activeCompactLink).toHaveAttribute('aria-current', 'location');
-    await compactTOC.locator('summary').click();
+    await compactTOC.locator('[data-slot="accordion-trigger"]').click();
     await expect(activeCompactLink).toBeVisible();
 
     await page.goto(`/bai-viet/khong-muc-luc-${unique}`);
-    await expect(page.locator('.toc--desktop')).toHaveCount(0);
-    await expect(page.locator('.toc--compact')).toHaveCount(0);
+    await expect(page.locator('[data-toc-desktop]')).toHaveCount(0);
+    await expect(page.locator('[data-toc-mobile]')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
   } finally {
     for (const articleID of createdArticleIDs) {
