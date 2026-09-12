@@ -200,6 +200,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
           <Label htmlFor="slug">Slug</Label>
           <Input
             id="slug"
+            className="font-mono"
             name="slug"
             pattern="[a-z0-9]+(-[a-z0-9]+)*"
             disabled={slugLocked}

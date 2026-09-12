@@ -136,7 +136,7 @@ Route quản lý không được liên kết từ navigation công khai.
 ### 3.4. Thiết kế giao diện
 
 - Dùng khung trang responsive tối đa 88rem (~1408px) với gutter co giãn theo viewport. Các trang danh sách và giới thiệu giữ cột đọc tối đa khoảng 52rem; trang bài viết desktop dùng cột bài tối đa 48rem cùng mục lục sticky ở cột phải, còn màn hình hẹp hiển thị mục lục thu gọn phía trên bài viết. Khu vực quản trị dùng toàn bộ khung rộng.
-- Dùng system font, khoảng trắng rộng và màu sắc neutral tiết chế. Thiết kế dùng Tailwind CSS 4 và semantic CSS variables của shadcn/ui, với góc gần vuông và không có card/shadow trang trí.
+- Dùng Plus Jakarta Sans cho nội dung và tiêu đề trên toàn bộ trang, fallback Inter và system-ui; dùng JetBrains Mono cho mã nguồn, Markdown editor và trường slug, fallback Geist Mono, ui-monospace, SFMono-Regular, Menlo và monospace. Font được self-host qua Next.js font loader, dùng font-display swap và hỗ trợ tiếng Việt. Giữ khoảng trắng rộng và màu sắc neutral tiết chế. Thiết kế dùng Tailwind CSS 4 và semantic CSS variables của shadcn/ui, với góc gần vuông và không có card/shadow trang trí.
 - Không dùng card lớn, sidebar quảng cáo hoặc thành phần gây mất tập trung.
 - Responsive từ mobile đến desktop.
 - Semantic HTML, focus state rõ ràng và thao tác được bằng bàn phím.
