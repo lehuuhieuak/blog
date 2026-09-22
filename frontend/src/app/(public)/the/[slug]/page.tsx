@@ -19,5 +19,5 @@ export default async function TagPage({ params, searchParams }: { params: Promis
   const [result, tags] = await Promise.all([listArticles(page, slug), listTags()])
   const tagName = tags.data.find((tag) => tag.slug === slug)?.name ?? slug
 
-  return <PageShell><section aria-labelledby="tag-title"><p className="eyebrow">Thẻ</p><h1 id="tag-title">#{tagName}</h1><ArticleList articles={result.data} /><Pagination pathname={`/the/${slug}`} current={result.meta.page} total={result.meta.total_pages} /></section></PageShell>
+  return <PageShell><section aria-labelledby="tag-title"><header className="page-intro page-intro--tag"><p className="eyebrow">Thẻ <span aria-hidden="true">•</span> {result.meta.total} bài viết</p><h1 id="tag-title">#{tagName}</h1><p>Những bài viết và ghi chép được lưu dưới thẻ {tagName}.</p></header><ArticleList articles={result.data} /><Pagination pathname={`/the/${slug}`} current={result.meta.page} total={result.meta.total_pages} /></section></PageShell>
 }

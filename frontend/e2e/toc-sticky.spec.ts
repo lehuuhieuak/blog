@@ -117,7 +117,9 @@ test('TOC stays within the article and highlights the heading at the reading mar
     await compactTOC.locator('summary').click();
     await expect(activeCompactLink).toBeVisible();
 
-    await page.goto(`/bai-viet/khong-muc-luc-${unique}`);
+    const shortArticleResponse = await page.goto(`/bai-viet/khong-muc-luc-${unique}`);
+    expect(shortArticleResponse?.status()).toBe(200);
+    await expect(page.getByRole("heading", { name: `Bài viết không mục lục ${unique}`, exact: true })).toBeVisible();
     await expect(page.locator('.toc--desktop')).toHaveCount(0);
     await expect(page.locator('.toc--compact')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);

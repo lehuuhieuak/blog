@@ -5,6 +5,7 @@ import PageShell from "@/components/PageShell"
 import Pagination from "@/components/Pagination"
 import { listArticles } from "@/lib/api"
 import { normalizePage } from "@/lib/pagination"
+import { site } from "@/lib/site"
 
 export const metadata: Metadata = { alternates: { canonical: "/" } }
 
@@ -13,5 +14,5 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const page = normalizePage(requestedPage)
   const result = await listArticles(page)
 
-  return <PageShell><section aria-labelledby="latest-title"><p className="eyebrow">Ghi chép mới</p><h1 id="latest-title">Bài viết gần đây</h1><ArticleList articles={result.data} /><Pagination pathname="/" current={result.meta.page} total={result.meta.total_pages} /></section></PageShell>
+  return <PageShell><section aria-labelledby="latest-title"><header className="page-intro"><p className="eyebrow">Ghi chép mới</p><h1 id="latest-title">Bài viết gần đây</h1><p>{site.description}</p></header><ArticleList articles={result.data} /><Pagination pathname="/" current={result.meta.page} total={result.meta.total_pages} /></section></PageShell>
 }
