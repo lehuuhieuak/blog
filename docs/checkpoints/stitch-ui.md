@@ -24,7 +24,7 @@ Tasks 2 and 3 run in parallel with disjoint file ownership after task 1. Orchest
 - Commit: `feat: align typography with Geist font plan`.
 - Remaining: public and admin UI (parallel), final browser/E2E audit.
 
-### Integration notes (in progress)
+### Integration notes
 
 - User changed new subagents to Luna / xhigh. Original Sol implementers reached usage limits after saving partial changes; Luna finishers continue from existing diffs.
 - Root review requested editor columns matching create/edit references, removal of misleading private-session and implementation-only UI labels, completion of interrupted 404/about styles, 12px wrapping tag labels, and removal of hardcoded article category.
@@ -50,3 +50,21 @@ Tasks 2 and 3 run in parallel with disjoint file ownership after task 1. Orchest
 - Validation: 15/15 unit tests, TypeScript, Webpack production build and 3/3 integrated E2E passed. TOC regression verifies no-heading article returns 200.
 - Commit: `feat: align public blog pages with Stitch design`.
 - The legacy editor grid rule remains in this checkpoint's index so the pre-existing editor keeps its layout; removing it belongs to the admin checkpoint that introduces utility-owned grids.
+
+### Checkpoint 3 — admin UI and integration
+
+- Admin list now has Stitch-style status tabs, title/slug rows, counts, update timestamps and edit links.
+- Create workspace uses metadata/content columns; edit workspace keeps fields left and preview right at 68rem, stacked on narrow screens. Top actions, delete dialog, no-auth warning, SSR admin routes and backend Markdown preview remain intact.
+- Fixed title input sizing to 32px create / 20px edit desktop; mobile slug/Markdown stay at least 16px. Removed global grid/reset rules competing with component utility styles.
+- Validation on integrated production: all 3 E2E passed (lifecycle 44.2s, typography 26.0s, TOC 4.6s). After the final title-class adjustment, rebuilt production and reran the expanded typography E2E (38.5s, passed), TypeScript and 15/15 unit tests.
+- Expanded typography E2E covers 8 routes at 375/1440px in light/dark themes, actual Chromium Geist/Geist Mono glyphs, desktop editor title sizes, mobile font sizes, gutters and overflow.
+- Visual audit checked 24 route/viewports at 375/768/1440px, plus dark home, populated editor preview and delete dialog. Temporary fixtures were cleaned by test/audit finalizers.
+- Production validation used Webpack because the environment blocked Turbopack worker port binding. No package scripts/configuration were changed to hide this limitation.
+- Backend, schema, API and container configuration were unchanged; Go tests/container rebuild were not run for this frontend-only task.
+- Commit: `feat: align admin workspace with Stitch design`.
+
+### Final audit
+
+- Independent Luna / xhigh audit: spec compliance PASS and code quality PASS; no substantive unresolved issues. Root independently reviewed source, runtime failures/fixes and screenshots.
+- Minor deferred cleanup: unused `.admin-warning` style remains harmless; no functional or visual impact.
+- All four tasks complete. Three local milestone commits; no push, PR or merge. Existing unrelated/untracked files remain untouched.

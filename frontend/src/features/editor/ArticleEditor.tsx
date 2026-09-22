@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { EyeIcon, FileTextIcon, LockKeyholeIcon, SaveIcon, SendIcon, Trash2Icon } from "lucide-react"
 
 import {
   Alert,
@@ -69,6 +70,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     tags: article?.tags.map((tag) => tag.name).join(", ") ?? "",
   }))
   const [manuallyEditedSlug, setManuallyEditedSlug] = useState(Boolean(article?.slug))
+  const [savedStatus, setSavedStatus] = useState<ArticleStatus>(article?.status ?? "draft")
   const [dirty, setDirty] = useState(false)
   const [busyAction, setBusyAction] = useState<Action>()
   const [preview, setPreview] = useState<MarkdownPreview>()
@@ -146,6 +148,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
       articleID ? "PUT" : "POST",
       articlePayload(articleStatus),
     )
+    setSavedStatus(articleStatus)
     setDirty(false)
     if (!articleID) {
       window.location.assign(`/quan-tri/bai-viet/${result.data.id}`)
@@ -165,27 +168,91 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     window.location.assign("/quan-tri/bai-viet")
   })
 
+  const workspaceLayout = article
+    ? "min-[68rem]:grid-cols-2"
+    : "min-[68rem]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] min-[68rem]:grid-rows-[auto_auto_auto]"
+
   return (
-    <form className="editor grid gap-6" aria-busy={!hydrated || isBusy} data-editor-ready={hydrated ? "true" : undefined} noValidate>
+    <form className="editor grid gap-8" aria-busy={!hydrated || isBusy} data-editor-ready={hydrated ? "true" : undefined} noValidate>
+      <div className="flex flex-col gap-5 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted-foreground">
+            <span className="rounded-sm bg-muted px-2 py-1">{article ? `ID ${article.id.slice(0, 8)}` : "Bản thảo mới"}</span>
+            {article ? (
+              <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2 py-1" data-article-status={savedStatus}>
+                <span className="size-1.5 rounded-full bg-foreground" aria-hidden="true" />
+                {savedStatus === "published" ? "Đã xuất bản" : "Nháp"}
+              </span>
+            ) : null}
+          </div>
+          <h1 className="m-0 text-[1.625rem] leading-[2.125rem] font-semibold tracking-[-0.015em] sm:text-[2rem] sm:leading-10">
+            {article ? "Sửa bài viết" : "Bài viết mới"}
+          </h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button className="rounded-sm" type="button" variant="outline" data-action="preview" disabled={!hydrated || isBusy} onClick={previewArticle}>
+            <EyeIcon aria-hidden="true" />
+            {busyAction === "preview" ? actionMessages.preview : "Xem trước"}
+          </Button>
+          <Button className="rounded-sm" type="button" variant="ghost" data-action="draft" disabled={!hydrated || isBusy} onClick={() => saveArticle("draft")}>
+            <SaveIcon aria-hidden="true" />
+            {busyAction === "draft" ? actionMessages.draft : "Lưu nháp"}
+          </Button>
+          <Button className="rounded-sm px-4" type="button" data-action="published" disabled={!hydrated || isBusy} onClick={() => saveArticle("published")}>
+            <SendIcon aria-hidden="true" />
+            {busyAction === "published" ? actionMessages.published : "Xuất bản"}
+          </Button>
+          {article ? (
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogTrigger
+                render={(
+                  <Button className="rounded-sm text-destructive lg:ml-2" type="button" variant="outline" data-action="delete" disabled={!hydrated || isBusy}>
+                    <Trash2Icon aria-hidden="true" />
+                    Xóa vĩnh viễn
+                  </Button>
+                )}
+              />
+              <AlertDialogContent className="rounded-sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xóa vĩnh viễn bài viết?</AlertDialogTitle>
+                  <AlertDialogDescription>Bài viết và liên kết công khai sẽ bị xóa. Thao tác này không thể hoàn tác.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-sm" type="button" disabled={!hydrated || isBusy}>Hủy</AlertDialogCancel>
+                  <AlertDialogAction className="rounded-sm" type="button" variant="destructive" disabled={!hydrated || isBusy} onClick={deleteArticle}>
+                    {busyAction === "delete" ? actionMessages.delete : "Xóa vĩnh viễn"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : null}
+        </div>
+      </div>
+
       {status.kind === "error" ? (
-        <Alert data-editor-status variant="destructive" role="alert">
+        <Alert className="rounded-sm" data-editor-status variant="destructive" role="alert">
           <AlertTitle>Lỗi</AlertTitle>
           <AlertDescription>{status.message}</AlertDescription>
         </Alert>
       ) : (
-        <p className="min-h-6 text-sm text-muted-foreground" data-editor-status role="status" aria-live="polite">
+        <p className="min-h-6 rounded-sm bg-muted/55 px-3 py-1 font-mono text-xs leading-6 text-muted-foreground" data-editor-status role="status" aria-live="polite">
           {status.message}
         </p>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <div className="grid gap-2 md:col-span-2">
-          <Label htmlFor="title">Tiêu đề</Label>
+      <div className={`editor-workspace grid items-start gap-8 ${workspaceLayout}`}>
+        <div className={`grid gap-2 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-1" : "min-[68rem]:col-start-2 min-[68rem]:row-start-1"}`}>
+          <div className="border-b border-border pb-2">
+            <Label id="title-label" className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="title">Tiêu đề</Label>
+          </div>
           <Input
             id="title"
+            className={`rounded-sm bg-card px-4 text-base font-medium ${article ? "md:text-xl" : "h-14 md:text-[2rem]"}`}
             name="title"
             required
             autoComplete="off"
+            placeholder="Gõ tiêu đề bài viết tại đây…"
             value={fields.title}
             onChange={(event) => {
               const title = event.target.value
@@ -196,84 +263,81 @@ export default function ArticleEditor({ article, apiBase }: Props) {
             }}
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="slug">Slug</Label>
-          <Input
-            id="slug"
-            className="font-mono"
-            name="slug"
-            pattern="[a-z0-9]+(-[a-z0-9]+)*"
-            disabled={slugLocked}
-            aria-describedby={slugLocked ? "slug-locked-note" : undefined}
-            value={fields.slug}
-            onChange={(event) => {
-              setManuallyEditedSlug(event.target.value.length > 0)
-              updateField("slug", event.target.value)
-            }}
-          />
-        </div>
-        {slugLocked && (
-          <p id="slug-locked-note" className="self-end text-sm text-muted-foreground">
-            Slug được khóa sau lần xuất bản đầu tiên để bảo vệ liên kết.
-          </p>
-        )}
-        <div className="grid gap-2 md:col-span-2">
-          <Label htmlFor="excerpt">Tóm tắt</Label>
-          <Textarea id="excerpt" name="excerpt" required value={fields.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="tags">Thẻ <span id="tags-note" className="font-normal text-muted-foreground">(ngăn cách bằng dấu phẩy)</span></Label>
-          <Input id="tags" name="tags" aria-describedby="tags-note" value={fields.tags} onChange={(event) => updateField("tags", event.target.value)} />
-        </div>
-      </div>
 
-      <div className="editor-workspace grid gap-6">
-        <div className="grid gap-2">
-          <Label htmlFor="content-markdown">Nội dung Markdown</Label>
+        <section className={`grid gap-5 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-2" : "min-[68rem]:col-start-1 min-[68rem]:row-span-3 min-[68rem]:row-start-1"}`} aria-labelledby="metadata-title">
+          <div className="flex items-center gap-2 border-b border-border pb-2">
+            <FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+            <h2 id="metadata-title" className="m-0 font-mono text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Thông tin ấn bản</h2>
+          </div>
+          <div className="grid gap-5">
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="slug">Slug</Label>
+                {slugLocked ? <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><LockKeyholeIcon className="size-3.5" aria-hidden="true" />Đã cố định</span> : null}
+              </div>
+              <Input
+                id="slug"
+                className="rounded-sm bg-card font-mono text-base sm:text-sm"
+                name="slug"
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                disabled={slugLocked}
+                aria-describedby={slugLocked ? "slug-locked-note" : undefined}
+                value={fields.slug}
+                onChange={(event) => {
+                  setManuallyEditedSlug(event.target.value.length > 0)
+                  updateField("slug", event.target.value)
+                }}
+              />
+            </div>
+            {slugLocked ? (
+              <p id="slug-locked-note" className="flex items-center gap-2 text-sm text-muted-foreground">
+                <LockKeyholeIcon className="size-4 shrink-0" aria-hidden="true" />
+                Slug được khóa sau lần xuất bản đầu tiên để bảo vệ liên kết.
+              </p>
+            ) : null}
+            <div className="grid gap-2">
+              <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="excerpt">Tóm tắt</Label>
+              <Textarea className="min-h-24 rounded-sm bg-card text-base sm:text-sm" id="excerpt" name="excerpt" required value={fields.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="tags">Thẻ <span id="tags-note" className="font-normal normal-case tracking-normal">(ngăn cách bằng dấu phẩy)</span></Label>
+              <Input className="rounded-sm bg-card text-base sm:text-sm" id="tags" name="tags" aria-describedby="tags-note" value={fields.tags} onChange={(event) => updateField("tags", event.target.value)} />
+            </div>
+          </div>
+        </section>
+
+        <section className={`grid gap-2 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-3" : "min-[68rem]:col-start-2 min-[68rem]:row-start-2"}`}>
+          <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
+            <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="content-markdown">Nội dung Markdown</Label>
+            <span className="font-mono text-xs text-muted-foreground">Hỗ trợ GFM</span>
+          </div>
           <Textarea
             id="content-markdown"
-            className="editor-content min-h-[28rem] resize-y font-mono text-sm leading-relaxed"
+            className="editor-content min-h-[34rem] resize-y rounded-sm bg-card p-4 font-mono text-base leading-relaxed sm:text-sm"
             name="content_markdown"
             required
+            placeholder="Bắt đầu viết bằng Markdown…"
             value={fields.content_markdown}
             onChange={(event) => updateField("content_markdown", event.target.value)}
           />
-        </div>
-        <section className="editor-preview min-h-[28rem] border border-border p-4 sm:p-8" aria-labelledby="preview-title" hidden={!preview} data-preview>
-          <h2 id="preview-title" className="mb-6 text-xl font-semibold">Xem trước</h2>
-          <div className="article-content" data-preview-content dangerouslySetInnerHTML={{ __html: preview?.html ?? "" }} />
         </section>
-      </div>
 
-      <div className="flex flex-wrap gap-3 border-t border-border pt-5">
-        <Button type="button" variant="outline" data-action="preview" disabled={!hydrated || isBusy} onClick={previewArticle}>
-          {busyAction === "preview" ? actionMessages.preview : "Xem trước"}
-        </Button>
-        <Button type="button" variant="outline" data-action="draft" disabled={!hydrated || isBusy} onClick={() => saveArticle("draft")}>
-          {busyAction === "draft" ? actionMessages.draft : "Lưu nháp"}
-        </Button>
-        <Button type="button" data-action="published" disabled={!hydrated || isBusy} onClick={() => saveArticle("published")}>
-          {busyAction === "published" ? actionMessages.published : "Xuất bản"}
-        </Button>
-        {article && (
-          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <AlertDialogTrigger
-              render={<Button className="ml-auto max-md:ml-0" type="button" variant="destructive" data-action="delete" disabled={!hydrated || isBusy}>Xóa vĩnh viễn</Button>}
-            />
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Xóa vĩnh viễn bài viết?</AlertDialogTitle>
-                <AlertDialogDescription>Thao tác này không thể hoàn tác.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel type="button" disabled={!hydrated || isBusy}>Hủy</AlertDialogCancel>
-                <AlertDialogAction type="button" variant="destructive" disabled={!hydrated || isBusy} onClick={deleteArticle}>
-                  {busyAction === "delete" ? actionMessages.delete : "Xóa vĩnh viễn"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <div className={`grid gap-2 min-[68rem]:col-start-2 min-[68rem]:sticky min-[68rem]:top-6 ${article ? "min-[68rem]:row-span-3 min-[68rem]:row-start-1" : "min-[68rem]:row-start-3"}`}>
+          <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
+            <h2 id="preview-title" className="m-0 font-mono text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Bản xem trước</h2>
+          </div>
+          {!preview ? (
+            <div className="grid min-h-[34rem] place-items-center rounded-sm border border-dashed border-border bg-muted/20 p-8 text-center">
+              <div className="grid max-w-xs justify-items-center gap-3 text-muted-foreground">
+                <EyeIcon className="size-6" aria-hidden="true" />
+                <p className="text-sm">Chọn “Xem trước” để đọc bài viết với định dạng hoàn chỉnh.</p>
+              </div>
+            </div>
+          ) : null}
+          <section className="editor-preview min-h-[34rem] rounded-sm border border-border bg-card p-4 sm:p-8" aria-labelledby="preview-title" hidden={!preview} data-preview>
+            <div className="article-content" data-preview-content dangerouslySetInnerHTML={{ __html: preview?.html ?? "" }} />
+          </section>
+        </div>
       </div>
     </form>
   )

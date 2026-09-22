@@ -872,10 +872,6 @@
     column-gap: clamp(3rem, 6vw, 4rem);
   }
 
-  .editor-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
   .toc--compact {
     display: none;
   }
