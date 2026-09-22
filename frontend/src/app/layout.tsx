@@ -1,22 +1,22 @@
 import type { Metadata } from "next"
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import Script from "next/script"
 
 import "@/styles/global.css"
 import { site } from "@/lib/site"
 
-const sans = Plus_Jakarta_Sans({
+const sans = Geist({
   subsets: ["latin", "vietnamese"],
-  variable: "--font-plus-jakarta-sans",
+  variable: "--font-geist-sans",
   display: "swap",
   fallback: ["Inter", "system-ui", "sans-serif"],
 })
 
-const mono = JetBrains_Mono({
+const mono = Geist_Mono({
   subsets: ["latin", "vietnamese"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-geist-mono",
   display: "swap",
-  fallback: ["Geist Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 })
 
 export const metadata: Metadata = {

@@ -76,8 +76,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-plus-jakarta-sans), Inter, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
