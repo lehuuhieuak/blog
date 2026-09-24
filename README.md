@@ -25,7 +25,12 @@ Phiên đăng nhập được ký bằng `ADMIN_SESSION_SECRET`, lưu trong cook
 
 Máy cần Go 1.27, Node.js 24 và PostgreSQL 18, hoặc có thể dùng các container Docker trong cấu hình trên.
 
-- Backend: đặt `DATABASE_URL` trỏ tới PostgreSQL local. Khi frontend chạy bằng `npm run dev` trên origin mặc định `http://localhost:4321`, chạy trong `backend/`: `CORS_ALLOWED_ORIGIN=http://localhost:4321 ADMIN_SESSION_SECRET=local-development-session-secret-32-bytes-minimum ADMIN_COOKIE_SECURE=false go run ./cmd/api`. Giá trị session secret mẫu này chỉ dành cho phát triển local và có ít nhất 32 byte; thay `CORS_ALLOWED_ORIGIN` nếu frontend dùng origin khác.
+- Backend: đặt `DATABASE_URL` trỏ tới PostgreSQL local. Khi frontend chạy bằng `npm run dev` trên origin mặc định `http://localhost:4321`, chạy trong `backend/`:
+  ```sh
+  export ADMIN_SESSION_SECRET="$(openssl rand -base64 48)"
+  CORS_ALLOWED_ORIGIN=http://localhost:4321 ADMIN_COOKIE_SECURE=false go run ./cmd/api
+  ```
+  Thay `CORS_ALLOWED_ORIGIN` nếu frontend dùng origin khác.
 - Migration: trong `backend/`: `go run ./cmd/migrate`.
 - Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Next.js vẫn SSR nội dung bằng Server Components; Client Components chỉ bao quanh theme toggle, các tương tác đăng nhập/đăng xuất và editor, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
 - Migration mới: thêm file mới có tên tăng dần trong `backend/migrations/`, ví dụ `000002_add_summary.sql`. Không chỉnh sửa migration đã áp dụng.
