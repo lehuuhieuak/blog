@@ -8,7 +8,7 @@ describe('pagination helpers', () => {
   });
 
   it('does not add a query string to the first page', () => {
-    expect(pageHref('/the/golang', 1)).toBe('/the/golang');
-    expect(pageHref('/the/golang', 2)).toBe('/the/golang?page=2');
+    expect(pageHref('/tags/golang', 1)).toBe('/tags/golang');
+    expect(pageHref('/tags/golang', 2)).toBe('/tags/golang?page=2');
   });
 });

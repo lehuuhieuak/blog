@@ -366,7 +366,7 @@ git commit -m "feat: protect admin API with session auth"
 - Consumes: the approved route table.
 - Produces: `routes.home`, `routes.about`, `routes.adminLogin`, `routes.adminArticles`, `routes.adminNewArticle`, `routes.article(slug)`, `routes.tag(slug)`, and `routes.adminArticle(id)` used by Task 5 and all route-dependent output.
 
-- [ ] **Step 1: Write failing route helper tests**
+- [x] **Step 1: Write failing route helper tests**
 
 Create `routes.test.ts`:
 
@@ -381,21 +381,21 @@ expect(routes.tag("go/web")).toBe("/tags/go%2Fweb")
 expect(routes.adminArticle("id/1")).toBe("/admin/articles/id%2F1")
 ```
 
-- [ ] **Step 2: Run the route test and confirm red state**
+- [x] **Step 2: Run the route test and confirm red state**
 
 Run `cd frontend && npm test -- --run tests/routes.test.ts`.
 
 Expected: FAIL because `src/lib/routes.ts` does not exist.
 
-- [ ] **Step 3: Implement the central route helper**
+- [x] **Step 3: Implement the central route helper**
 
 Create a server/client-safe module with immutable string constants and `encodeURIComponent` in each dynamic builder. Do not include the API endpoint paths in this module because they already use English and are not frontend routes.
 
-- [ ] **Step 4: Move route pages and replace every rendered/internal URL**
+- [x] **Step 4: Move route pages and replace every rendered/internal URL**
 
 Move the six page files to the exact English directories above. Replace links and programmatic navigation in public chrome, not-found UI, article lists, tag/article pages, admin layout/list/editor, pagination, metadata, JSON-LD, sitemap, RSS, and robots with the new helper. `robots.txt` must use `Disallow: /admin/`. Preserve Vietnamese visible labels.
 
-- [ ] **Step 5: Update unit expectations and prove no old route remains in runtime source**
+- [x] **Step 5: Update unit expectations and prove no old route remains in runtime source**
 
 Change pagination expectations to `/tags/golang` and `/admin/articles?status=draft`. Run:
 
@@ -407,7 +407,7 @@ rg -n '(/quan-tri|/bai-viet|/the/|/gioi-thieu)' src
 
 Expected: tests pass and `rg` returns no match under `src`.
 
-- [ ] **Step 6: Type-check and build the migrated route tree**
+- [x] **Step 6: Type-check and build the migrated route tree**
 
 Run:
 
@@ -419,7 +419,7 @@ npm run build
 
 Expected: type-check and production build pass; build route output contains `/about`, `/articles/[slug]`, `/tags/[slug]`, `/admin/articles`, `/admin/articles/new`, and `/admin/articles/[id]`, with none of the removed Vietnamese route directories.
 
-- [ ] **Step 7: Commit the route migration**
+- [x] **Step 7: Commit the route migration**
 
 Stage only Task 4 files and the ledger, inspect staged rename detection/diff, and commit:
 

@@ -6,5 +6,7 @@ import { apiBaseForBrowser } from "@/lib/api"
 export const metadata: Metadata = { title: "Bài viết mới" }
 
 export default function NewArticlePage() {
-  return <ArticleEditor apiBase={apiBaseForBrowser()} />
+  return (
+    <ArticleEditor apiBase={apiBaseForBrowser()} />
+  )
 }

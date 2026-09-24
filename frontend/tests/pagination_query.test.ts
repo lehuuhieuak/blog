@@ -3,7 +3,7 @@ import { expect, it } from "vitest"
 import { articleStatus, normalizePage, pageHref } from "../src/lib/pagination"
 
 it("preserves existing query parameters when changing page", () => {
-  expect(pageHref("/quan-tri/bai-viet?status=draft", 3)).toBe("/quan-tri/bai-viet?status=draft&page=3")
+  expect(pageHref("/admin/articles?status=draft", 3)).toBe("/admin/articles?status=draft&page=3")
 })
 
 it.each([

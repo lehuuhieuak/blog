@@ -7,6 +7,7 @@ import LinkButton from "@/components/LinkButton"
 import Pagination from "@/components/Pagination"
 import { listAdminArticles } from "@/lib/api"
 import { articleStatus, normalizePage } from "@/lib/pagination"
+import { routes } from "@/lib/routes"
 
 const formatter = new Intl.DateTimeFormat("vi-VN", {
   dateStyle: "short",
@@ -22,9 +23,9 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
   const query = status ? `?status=${status}` : ""
 
   const filters = [
-    { label: "Tất cả", href: "/quan-tri/bai-viet", active: status === undefined },
-    { label: "Nháp", href: "/quan-tri/bai-viet?status=draft", active: status === "draft" },
-    { label: "Đã xuất bản", href: "/quan-tri/bai-viet?status=published", active: status === "published" },
+    { label: "Tất cả", href: routes.adminArticles, active: status === undefined },
+    { label: "Nháp", href: `${routes.adminArticles}?status=draft`, active: status === "draft" },
+    { label: "Đã xuất bản", href: `${routes.adminArticles}?status=published`, active: status === "published" },
   ]
 
   return (
@@ -34,7 +35,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
           <h1 className="m-0 text-[1.625rem] leading-[2.125rem] font-semibold tracking-[-0.015em] sm:text-[2rem] sm:leading-10">Bài viết</h1>
           <span className="font-mono text-xs text-muted-foreground">{result.meta.total} mục</span>
         </div>
-        <LinkButton href="/quan-tri/bai-viet/moi" size="lg" className="gap-2 rounded-sm px-4">
+        <LinkButton href={routes.adminNewArticle} size="lg" className="gap-2 rounded-sm px-4">
           <PlusIcon aria-hidden="true" />
           Tạo bài viết
         </LinkButton>
@@ -74,7 +75,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                 {result.data.map((article) => (
                   <TableRow key={article.id}>
                     <TableCell className="max-w-0 px-5 py-4 whitespace-normal">
-                      <a className="block truncate font-medium no-underline hover:bg-transparent hover:underline" href={`/quan-tri/bai-viet/${article.id}`}>{article.title}</a>
+                      <a className="block truncate font-medium no-underline hover:bg-transparent hover:underline" href={routes.adminArticle(article.id)}>{article.title}</a>
                       <span className="mt-0.5 block truncate font-mono text-xs text-muted-foreground">/{article.slug}</span>
                     </TableCell>
                     <TableCell className="px-4 py-4">
@@ -87,7 +88,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                       <time dateTime={article.updated_at}>{formatter.format(new Date(article.updated_at))}</time>
                     </TableCell>
                     <TableCell className="px-4 py-4 text-right">
-                      <a className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground no-underline hover:text-foreground" href={`/quan-tri/bai-viet/${article.id}`} aria-label={`Sửa ${article.title}`}>
+                      <a className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground no-underline hover:text-foreground" href={routes.adminArticle(article.id)} aria-label={`Sửa ${article.title}`}>
                         <PencilIcon className="size-4" aria-hidden="true" />
                       </a>
                     </TableCell>
@@ -103,7 +104,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
         </div>
       )}
 
-      <Pagination pathname={`/quan-tri/bai-viet${query}`} current={result.meta.page} total={result.meta.total_pages} />
+      <Pagination pathname={`${routes.adminArticles}${query}`} current={result.meta.page} total={result.meta.total_pages} />
     </div>
   )
 }

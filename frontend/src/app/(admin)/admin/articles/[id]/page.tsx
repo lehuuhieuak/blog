@@ -19,7 +19,9 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
   const { id } = await params
   try {
     const { data } = await getAdminArticle(id)
-    return <ArticleEditor article={data} apiBase={apiBaseForBrowser()} />
+    return (
+      <ArticleEditor article={data} apiBase={apiBaseForBrowser()} />
+    )
   } catch (error) {
     if (error instanceof APIError && error.status === 404) notFound()
     throw error

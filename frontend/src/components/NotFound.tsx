@@ -1,3 +1,5 @@
+import { routes } from "@/lib/routes"
+
 export default function NotFound() {
   return (
     <section className="not-found" aria-labelledby="not-found-title">
@@ -6,9 +8,9 @@ export default function NotFound() {
       <h1 id="not-found-title">Không tìm thấy trang</h1>
       <p>Liên kết này không tồn tại hoặc bài viết không còn được xuất bản.</p>
       <div className="not-found__actions">
-        <a href="/">← Về trang chủ</a>
+        <a href={routes.home}>← Về trang chủ</a>
         <span aria-hidden="true">•</span>
-        <a href="/gioi-thieu">Tìm hiểu về tác giả</a>
+        <a href={routes.about}>Tìm hiểu về tác giả</a>
       </div>
     </section>
   )

@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
 
 import PageShell from "@/components/PageShell"
+import { routes } from "@/lib/routes"
 import { site } from "@/lib/site"
 
-export const metadata: Metadata = { title: "Giới thiệu", alternates: { canonical: "/gioi-thieu" } }
+export const metadata: Metadata = { title: "Giới thiệu", alternates: { canonical: routes.about } }
 
 export default function AboutPage() {
   return (

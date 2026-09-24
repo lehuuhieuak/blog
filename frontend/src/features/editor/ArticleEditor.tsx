@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminArticle, ArticleInput, MarkdownPreview } from "@/features/article/types"
+import { routes } from "@/lib/routes"
 
 type Action = "preview" | "draft" | "published" | "delete"
 type ArticleStatus = ArticleInput["status"]
@@ -151,7 +152,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     setSavedStatus(articleStatus)
     setDirty(false)
     if (!articleID) {
-      window.location.assign(`/quan-tri/bai-viet/${result.data.id}`)
+      window.location.assign(routes.adminArticle(result.data.id))
       return
     }
     if (articleStatus === "published") {
@@ -165,7 +166,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
     await callAPI<void>(`/admin/articles/${articleID}`, "DELETE")
     setDirty(false)
     setDeleteDialogOpen(false)
-    window.location.assign("/quan-tri/bai-viet")
+    window.location.assign(routes.adminArticles)
   })
 
   const workspaceLayout = article
