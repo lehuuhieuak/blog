@@ -69,7 +69,7 @@ func (a *AdminAuth) validCredentials(username, password string) bool {
 }
 
 func (a *AdminAuth) issueCookie() (*http.Cookie, AdminSession, error) {
-	expiresAt := a.now().Add(adminSessionTTL).UTC()
+	expiresAt := a.now().Add(adminSessionTTL).UTC().Truncate(time.Second)
 	payload, err := json.Marshal(adminSessionPayload{
 		Version:   adminSessionVersion,
 		Username:  adminUsername,

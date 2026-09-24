@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -97,6 +98,59 @@ func TestAdminSessionCookieRoundTrip(t *testing.T) {
 	}
 	if gotSession != wantSession {
 		t.Fatalf("sessionFromRequest() = %#v, want %#v", gotSession, wantSession)
+	}
+}
+
+func TestAdminSessionExpiryUsesWholeSecondPrecision(t *testing.T) {
+	fixedNow := time.Date(2026, time.September, 24, 12, 0, 0, 900_000_000, time.UTC)
+	currentTime := fixedNow
+	auth, err := NewAdminAuth(strings.Repeat("s", 32), false, "https://blog.example", func() time.Time { return currentTime })
+	if err != nil {
+		t.Fatalf("NewAdminAuth() error = %v", err)
+	}
+
+	cookie, session, err := auth.issueCookie()
+	if err != nil {
+		t.Fatalf("issueCookie() error = %v", err)
+	}
+
+	tokenStart := time.Unix(fixedNow.Unix(), 0).UTC()
+	wantExpiry := tokenStart.Add(8 * time.Hour)
+	if !session.ExpiresAt.Equal(wantExpiry) {
+		t.Fatalf("issueCookie() session expiry = %s, want %s", session.ExpiresAt.Format(time.RFC3339Nano), wantExpiry.Format(time.RFC3339Nano))
+	}
+	if !cookie.Expires.Equal(wantExpiry) {
+		t.Fatalf("issueCookie() cookie expiry = %s, want %s", cookie.Expires.Format(time.RFC3339Nano), wantExpiry.Format(time.RFC3339Nano))
+	}
+	if gotDuration := session.ExpiresAt.Sub(tokenStart); gotDuration != 8*time.Hour {
+		t.Fatalf("issueCookie() expiry duration at token precision = %s, want %s", gotDuration, 8*time.Hour)
+	}
+
+	encodedPayload, _, ok := strings.Cut(cookie.Value, ".")
+	if !ok {
+		t.Fatal("issued token is missing its signature separator")
+	}
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(encodedPayload)
+	if err != nil {
+		t.Fatalf("decode issued token payload: %v", err)
+	}
+	var payload adminSessionPayload
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		t.Fatalf("decode issued token claims: %v", err)
+	}
+	if payload.ExpiresAt != wantExpiry.Unix() {
+		t.Fatalf("issued token expiry = %d, want %d", payload.ExpiresAt, wantExpiry.Unix())
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.AddCookie(cookie)
+	currentTime = wantExpiry.Add(-time.Nanosecond)
+	if _, err := auth.sessionFromRequest(request); err != nil {
+		t.Fatalf("sessionFromRequest() immediately before expiry error = %v, want valid session", err)
+	}
+	currentTime = wantExpiry
+	if _, err := auth.sessionFromRequest(request); !errors.Is(err, errInvalidSession) {
+		t.Fatalf("sessionFromRequest() at expiry error = %v, want errInvalidSession", err)
 	}
 }
 
