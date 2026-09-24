@@ -221,8 +221,8 @@ jobs:
           test -n "$SSH_PRIVATE_KEY"
           test -n "$SSH_KNOWN_HOSTS"
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/github_action
+          chmod 600 ~/.ssh/github_action
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
       - name: Deploy published digests
@@ -238,7 +238,7 @@ jobs:
           test -n "$SSH_HOST"
           test -n "$SSH_PORT"
           test -n "$SSH_USER"
-          deploy_output="$(ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" -- /usr/local/bin/minimal-blog-deploy "$GITHUB_SHA" "$API_IMAGE" "$MIGRATE_IMAGE" "$WEB_IMAGE")"
+          deploy_output="$(ssh -i ~/.ssh/github_action -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" -- /usr/local/bin/minimal-blog-deploy "$GITHUB_SHA" "$API_IMAGE" "$MIGRATE_IMAGE" "$WEB_IMAGE")"
           printf '%s\n' "$deploy_output" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Write deployment summary
         env:

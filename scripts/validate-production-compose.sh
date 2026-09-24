@@ -25,6 +25,8 @@ docker compose --env-file "$sample_env" --file "$compose_file" config > "$render
 
 grep -q '^  db:$' "$rendered_config" && { echo 'production Compose must not include a database service' >&2; exit 1; }
 [[ "$(grep -Ec 'image: .+@sha256:[a-f0-9]{64}$' "$rendered_config")" -eq 3 ]] || { echo 'all production services must use digest-pinned images' >&2; exit 1; }
-[[ "$(grep -c 'host_ip: 127.0.0.1' "$rendered_config")" -eq 2 ]] || { echo 'API and web must bind only to loopback' >&2; exit 1; }
+grep -q '^    ports:' "$rendered_config" && { echo 'production services must not publish host ports' >&2; exit 1; }
+[[ "$(grep -c '^    name: reverse-proxy-networks$' "$rendered_config")" -eq 1 ]] || { echo 'production Compose must use reverse-proxy-networks' >&2; exit 1; }
+[[ "$(grep -c '^      reverse-proxy-networks: null$' "$rendered_config")" -eq 2 ]] || { echo 'API and web must attach to reverse-proxy-networks' >&2; exit 1; }
 
 echo 'Production Compose contract is valid.'
