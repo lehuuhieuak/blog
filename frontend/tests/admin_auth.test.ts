@@ -21,6 +21,8 @@ describe("safeAdminNext", () => {
     ["/\\\\evil.example/admin/articles", "/admin/articles"],
     ["/administrator", "/admin/articles"],
     ["/admin/login?next=/admin/articles", "/admin/articles"],
+    ["/admin/login/", "/admin/articles"],
+    ["/admin/login/?next=/admin/articles", "/admin/articles"],
     ["/admin/%E0%A4%A", "/admin/articles"],
     ["/admin/articles/%", "/admin/articles"],
     ["/admin/articles/new?draft=1", "/admin/articles/new?draft=1"],
