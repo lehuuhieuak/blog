@@ -5,7 +5,7 @@
 - Monorepo gồm `backend/`, `frontend/` và `compose.yaml`.
 - Backend: Go 1.27, Gin, PostgreSQL 18, `pgx/v5`, theo Clean Architecture.
 - Frontend: Next.js 16.3.4 App Router, TypeScript, React 19, Tailwind CSS 4 và shadcn/ui (Base UI), Node.js 24 LTS.
-- Server Components là mặc định để trang nội dung tiếp tục SSR với JavaScript tối thiểu; chỉ theme toggle và editor quản trị là Client Components. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
+- Server Components là mặc định để trang nội dung tiếp tục SSR với JavaScript tối thiểu; Client Components chỉ bao quanh theme toggle, các tương tác đăng nhập/đăng xuất và editor quản trị. Tailwind CSS 4 và shadcn/ui chỉ dùng cho UI components được chọn lọc.
 - Docker Compose chạy PostgreSQL, migration, API và Next.js frontend.
 
 Next.js được chọn để chuẩn hóa frontend trên React/Next.js trong khi vẫn giữ SSR và Server Components cho website thiên về nội dung. Điều này giữ SEO tốt, giao diện tối giản và trải nghiệm đọc tập trung mà không chuyển trang công khai thành SPA.
@@ -96,7 +96,7 @@ Frontend dùng feature-based architecture:
 - `lib`: site config, HTTP client và utilities.
 - `styles`: CSS variables, typography và global styles.
 
-Next.js chạy bằng App Router và `output: "standalone"`. Các trang công khai, metadata, danh sách, phân trang và nội dung tĩnh là Server Components; theme toggle và editor là Client Components. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
+Next.js chạy bằng App Router và `output: "standalone"`. Các trang công khai, metadata, danh sách, phân trang và nội dung tĩnh là Server Components; Client Components chỉ bao quanh theme toggle, các tương tác đăng nhập/đăng xuất và editor. Tailwind CSS 4 và shadcn/ui (Base Nova, Base UI) dùng cho controls, trạng thái và bảng, nhưng không biến trang công khai thành React SPA.
 
 ### 3.2. Route công khai
 

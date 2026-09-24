@@ -39,7 +39,7 @@
 
 ## Persistent Progress Ledger
 
-- [ ] Task 1: Source of truth and API contract
+- [x] Task 1: Source of truth and API contract
 - [x] Task 2: Backend credential and signed-session core
 - [x] Task 3: Backend auth HTTP flow, middleware, and runtime configuration
 - [x] Task 4: English frontend route migration
@@ -69,11 +69,11 @@ Append one line below after every implementer, review, fix round, validation, an
 - Consumes: the approved design document.
 - Produces: the exact auth endpoints, cookie scheme, errors, route names, and acceptance criteria used by Tasks 2–6.
 
-- [ ] **Step 1: Rewrite the conflicting product decisions in `PLAN.md`**
+- [x] **Step 1: Rewrite the conflicting product decisions in `PLAN.md`**
 
 Replace the public/admin route lists with the approved English paths. Replace the unauthenticated-admin banner and “future middleware” statements with the fixed-account login, eight-hour signed cookie, protected API group, logout, and no-user-table decisions. Add the three auth endpoints and `401`/`403` behavior. Keep “reader accounts” and database-backed users outside V1, but remove authentication itself from the out-of-scope list. Extend frontend/backend/E2E acceptance criteria with login, logout, session expiry, CSRF origin validation, English URLs, and `404` for old Vietnamese routes.
 
-- [ ] **Step 2: Update OpenAPI before implementation**
+- [x] **Step 2: Update OpenAPI before implementation**
 
 Set the API description to authenticated administration. Add:
 
@@ -114,11 +114,11 @@ Define `POST /admin/auth/login`, `GET /admin/auth/session`, and `POST /admin/aut
 
 Login returns `204` and sets an eight-hour `admin_session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`, and `Secure` when configured. Invalid credentials return the generic `401 unauthorized` envelope. Session lookup returns `200` with `data.username = "admin"` and UTC ISO-8601 `data.expires_at`; logout returns `204` and expires the same cookie even when it is missing or expired. A missing or mismatched `Origin` on any non-preflight admin `POST`, `PUT`, or `DELETE` returns `403 csrf_failed`; malformed login input returns `422 validation_error`.
 
-- [ ] **Step 3: Mark the design as approved and implementation active**
+- [x] **Step 3: Mark the design as approved and implementation active**
 
 Change the design status from “Implementation has not started” to “Approved; implementation tracked in `docs/superpowers/plans/2026-09-24-admin-auth-and-english-routes.md`.” Do not mark any implementation task complete.
 
-- [ ] **Step 4: Validate the documentation diff**
+- [x] **Step 4: Validate the documentation diff**
 
 Run:
 
@@ -129,7 +129,7 @@ rg -n "intentionally unauthenticated|chưa có xác thực|/quan-tri|/bai-viet|/
 
 Expected: `git diff --check` exits 0; any Vietnamese path matches in `PLAN.md` are explicitly described as removed paths or test expectations, and OpenAPI contains none of the old unauthenticated description.
 
-- [ ] **Step 5: Commit the approved contract**
+- [x] **Step 5: Commit the approved contract**
 
 Stage only the four task files, inspect the staged diff, and commit:
 

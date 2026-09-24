@@ -1,11 +1,11 @@
 # Blog cá nhân tối giản
 
-Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Next.js App Router. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ Server Components. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái; chỉ theme toggle và editor quản trị là Client Components. Trang bài viết có thêm script nhỏ không dùng framework để highlight mục lục khi cuộn; nội dung công khai vẫn SSR hoàn toàn.
+Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Next.js App Router. Markdown chỉ được render, tô màu code và sanitize ở backend; giao diện công khai gửi HTML từ Server Components. Frontend dùng Tailwind CSS 4 và shadcn/ui (Base UI) cho controls/trạng thái; Client Components chỉ bao quanh theme toggle, các tương tác đăng nhập/đăng xuất và editor quản trị. Trang bài viết có thêm script nhỏ không dùng framework để highlight mục lục khi cuộn; nội dung công khai vẫn SSR hoàn toàn.
 
 ## Chạy toàn bộ stack
 
 1. Sao chép cấu hình mẫu: `cp .env.example .env`.
-2. Đổi `POSTGRES_PASSWORD` và các giá trị `SITE_*` trong `.env` trước khi dùng ngoài máy cá nhân.
+2. Thay `ADMIN_SESSION_SECRET` bằng secret ngẫu nhiên dài ít nhất 32 byte trước khi chạy; placeholder trong file mẫu cố ý quá ngắn. Đổi `POSTGRES_PASSWORD` và các giá trị `SITE_*` trước khi dùng ngoài máy cá nhân.
 3. Chạy `docker compose up --build`.
 4. Mở `http://localhost:4321`; API ở `http://localhost:8080`.
 
@@ -25,9 +25,9 @@ Phiên đăng nhập được ký bằng `ADMIN_SESSION_SECRET`, lưu trong cook
 
 Máy cần Go 1.27, Node.js 24 và PostgreSQL 18, hoặc có thể dùng các container Docker trong cấu hình trên.
 
-- Backend: đặt `DATABASE_URL` trỏ tới PostgreSQL local. Khi frontend chạy bằng `npm run dev` trên origin mặc định `http://localhost:3000`, chạy trong `backend/`: `CORS_ALLOWED_ORIGIN=http://localhost:3000 ADMIN_SESSION_SECRET=local-development-session-secret-32-bytes-minimum ADMIN_COOKIE_SECURE=false go run ./cmd/api`. Giá trị session secret mẫu này chỉ dành cho phát triển local và có ít nhất 32 byte; thay `CORS_ALLOWED_ORIGIN` nếu frontend dùng origin khác.
+- Backend: đặt `DATABASE_URL` trỏ tới PostgreSQL local. Khi frontend chạy bằng `npm run dev` trên origin mặc định `http://localhost:4321`, chạy trong `backend/`: `CORS_ALLOWED_ORIGIN=http://localhost:4321 ADMIN_SESSION_SECRET=local-development-session-secret-32-bytes-minimum ADMIN_COOKIE_SECURE=false go run ./cmd/api`. Giá trị session secret mẫu này chỉ dành cho phát triển local và có ít nhất 32 byte; thay `CORS_ALLOWED_ORIGIN` nếu frontend dùng origin khác.
 - Migration: trong `backend/`: `go run ./cmd/migrate`.
-- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Next.js vẫn SSR nội dung bằng Server Components; chỉ theme và editor là Client Components, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
+- Frontend: đặt `API_URL=http://localhost:8080/api/v1` và `PUBLIC_API_URL=http://localhost:8080/api/v1`, sau đó chạy trong `frontend/`: `npm ci && npm run dev`. Next.js vẫn SSR nội dung bằng Server Components; Client Components chỉ bao quanh theme toggle, các tương tác đăng nhập/đăng xuất và editor, còn mục lục bài viết dùng scrollspy JavaScript tối thiểu không đổi URL khi cuộn.
 - Migration mới: thêm file mới có tên tăng dần trong `backend/migrations/`, ví dụ `000002_add_summary.sql`. Không chỉnh sửa migration đã áp dụng.
 
 ## Kiểm tra
