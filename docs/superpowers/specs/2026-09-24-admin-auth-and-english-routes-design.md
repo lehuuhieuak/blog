@@ -3,7 +3,7 @@
 ## Status
 
 - Design approved in conversation on 2026-09-24.
-- Implementation has not started.
+- Approved; implementation tracked in `docs/superpowers/plans/2026-09-24-admin-auth-and-english-routes.md`.
 - This document changes the decisions in `PLAN.md` that describe the admin area as unauthenticated and use Vietnamese frontend routes. `PLAN.md` must be updated in the same implementation before product code depends on the new contract.
 
 ## Goal

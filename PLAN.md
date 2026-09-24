@@ -19,10 +19,11 @@ Backend tuân theo Clean Architecture với hướng phụ thuộc từ ngoài v
 - **Domain:** `Article`, `Tag`, trạng thái bài viết, domain errors và các quy tắc nghiệp vụ.
 - **Application:** các use case CRUD, xuất bản, gỡ xuất bản, phân trang và Markdown preview.
 - **Ports:** repository, transaction manager và Markdown renderer interfaces.
-- **Adapters:** Gin HTTP handlers, PostgreSQL/pgx repositories, logging và cấu hình môi trường.
+- **Adapters:** Gin HTTP handlers, authentication/session middleware, PostgreSQL/pgx repositories, logging và cấu hình môi trường.
 - **Bootstrap:** khởi tạo database pool, dependency injection, router và HTTP server.
 
 Domain và application không được phụ thuộc vào Gin, pgx hoặc chi tiết hạ tầng.
+Xác thực khu vực quản lý nằm ở lớp HTTP delivery; danh tính quản trị dùng một tài khoản cố định, không thêm bảng người dùng.
 
 ### 2.2. Schema PostgreSQL
 
@@ -79,6 +80,9 @@ Domain và application không được phụ thuộc vào Gin, pgx hoặc chi ti
 - Structured logging, request ID, panic recovery và graceful shutdown.
 - Có health check và readiness check riêng.
 - CORS chỉ cho phép origin frontend được cấu hình.
+- Cấu hình xác thực qua `ADMIN_SESSION_SECRET` (bắt buộc, tối thiểu 32 byte, chỉ cung cấp lúc chạy) và `ADMIN_COOKIE_SECURE`; API không khởi động nếu secret thiếu hoặc quá ngắn.
+- Phiên quản trị stateless được ký HMAC-SHA-256, hết hạn sau 8 giờ và dùng cookie `admin_session` với `HttpOnly`, `SameSite=Lax`, `Path=/`, không đặt `Domain`; production bật `Secure`, còn logout xóa cùng cookie. Đổi secret sẽ vô hiệu hóa mọi phiên đã cấp.
+- Tài khoản quản trị cố định có username `admin`; backend lưu bcrypt hash, không có bảng user hoặc luồng đổi/khôi phục mật khẩu.
 
 ## 3. Frontend và giao diện
 
@@ -97,13 +101,14 @@ Next.js chạy bằng App Router và `output: "standalone"`. Các trang công kh
 ### 3.2. Route công khai
 
 - `/`: danh sách bài mới nhất, 10 bài mỗi trang.
-- `/bai-viet/[slug]`: trang đọc bài.
-- `/the/[slug]`: danh sách bài theo thẻ, có phân trang.
-- `/gioi-thieu`: thông tin mẫu về tác giả và blog.
+- `/articles/[slug]`: trang đọc bài.
+- `/tags/[slug]`: danh sách bài theo thẻ, có phân trang.
+- `/about`: thông tin mẫu về tác giả và blog.
 - `/404`: trang không tìm thấy.
 - `/rss.xml`: RSS feed cho các bài mới nhất.
 - `/sitemap.xml`: sitemap động từ các bài đã xuất bản.
 - `/robots.txt`: chỉ dẫn crawler.
+- Các route tiếng Việt cũ `/bai-viet/[slug]`, `/the/[slug]`, `/gioi-thieu`, `/quan-tri/bai-viet`, `/quan-tri/bai-viet/moi` và `/quan-tri/bai-viet/[id]` trả về `404`, không redirect.
 
 Trang bài viết hiển thị:
 
@@ -116,9 +121,10 @@ Bài nháp hoặc slug không tồn tại phải trả về HTTP `404` ở route
 
 ### 3.3. Route quản lý
 
-- `/quan-tri/bai-viet`: danh sách bài, lọc theo trạng thái và phân trang.
-- `/quan-tri/bai-viet/moi`: tạo bài mới.
-- `/quan-tri/bai-viet/[id]`: sửa bài.
+- `/admin/login`: đăng nhập bằng tài khoản quản trị cố định.
+- `/admin/articles`: danh sách bài, lọc theo trạng thái và phân trang.
+- `/admin/articles/new`: tạo bài mới.
+- `/admin/articles/[id]`: sửa bài.
 
 Editor gồm:
 
@@ -129,7 +135,7 @@ Editor gồm:
 - Markdown textarea và preview.
 - Các hành động lưu nháp, xuất bản, cập nhật, gỡ xuất bản và xóa.
 - Cảnh báo khi rời trang trong lúc còn thay đổi chưa lưu.
-- Banner cảnh báo rằng khu vực quản lý hiện chưa có xác thực.
+- Khu vực quản lý yêu cầu phiên đăng nhập hợp lệ; layout xác minh phiên qua API trước khi render, trang đăng nhập giữ đường dẫn `next` an toàn và giao diện quản trị có thao tác logout.
 
 Route quản lý không được liên kết từ navigation công khai.
 
@@ -178,7 +184,14 @@ Route quản lý không được liên kết từ navigation công khai.
 - `DELETE /api/v1/admin/articles/:id`
 - `POST /api/v1/admin/markdown/preview`
 
-Admin endpoints được đặt trong Gin route group riêng để có thể gắn authentication middleware sau này mà không đổi contract.
+Các endpoint quản trị dùng route group có middleware xác minh cookie phiên. Chỉ login và logout không cần phiên hiện có; endpoint session, bài viết và Markdown preview đều yêu cầu phiên hợp lệ. Mọi request `POST`, `PUT` và `DELETE` dưới `/api/v1/admin`, bao gồm login và logout, phải có `Origin` đúng bằng `CORS_ALLOWED_ORIGIN`; thiếu hoặc sai origin trả `403 csrf_failed`.
+
+### 4.3.1. Xác thực quản trị
+
+- `POST /api/v1/admin/auth/login` nhận username/password; đăng nhập thành công phát cookie `admin_session` và trả `204`. Credential sai trả `401 unauthorized` với thông báo tổng quát.
+- `GET /api/v1/admin/auth/session` yêu cầu phiên hợp lệ và trả `200` với `data.username = "admin"` cùng `data.expires_at` là timestamp UTC ISO-8601; thiếu hoặc phiên sai/hết hạn trả `401 unauthorized`.
+- `POST /api/v1/admin/auth/logout` xóa cookie phiên và trả `204`, kể cả khi cookie thiếu hoặc hết hạn.
+- Các lỗi xác thực dùng error envelope hiện có; origin sai hoặc thiếu trên request không an toàn trả `403 csrf_failed`; login JSON sai định dạng hoặc thiếu trường trả `422 validation_error`.
 
 ### 4.4. Request và response
 
@@ -223,6 +236,7 @@ Lỗi trả về:
 
 - Timestamp dùng ISO-8601 UTC.
 - Validation error trả `422`, không tìm thấy trả `404`, slug trùng trả `409`.
+- Thiếu hoặc phiên quản trị không hợp lệ trả `401 unauthorized`; origin sai hoặc thiếu trên request quản trị không an toàn trả `403 csrf_failed`.
 - Xóa thành công trả `204`.
 - Contract được mô tả và kiểm tra bằng OpenAPI.
 
@@ -249,6 +263,8 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 ### 6.1. Backend
 
 - Unit test validation và trạng thái domain.
+- Unit test credential cố định, ký/xác minh cookie, thuộc tính cookie, phiên hết hạn hoặc sai chữ ký, và kiểm tra cấu hình secret.
+- HTTP test cho login/session/logout, `401` trên từng admin endpoint được bảo vệ, `403 csrf_failed` khi origin sai/thiếu, và quyền truy cập công khai không cần phiên.
 - Test slug tiếng Việt, slug collision và khóa slug sau xuất bản.
 - Test chuẩn hóa, thêm và xóa tag.
 - Test phân trang và chỉ trả bài đã xuất bản.
@@ -259,15 +275,18 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 ### 6.2. Frontend và end-to-end
 
 - Type check và production build của Next.js với React/Tailwind/shadcn.
+- Unit test cho đăng nhập, kiểm tra phiên, điều hướng logout, xử lý hết hạn phiên và URL đích `next` an toàn.
 - Playwright kiểm tra luồng:
-  1. Tạo bài nháp.
-  2. Xác nhận bài chưa xuất hiện công khai.
+  1. Truy cập khu vực quản lý khi chưa đăng nhập và được chuyển tới login; credential sai bị từ chối, đăng nhập đúng quay lại trang được yêu cầu.
+  2. Tạo bài nháp và xác nhận bài chưa xuất hiện công khai.
   3. Xem trước Markdown.
   4. Xuất bản và thấy bài trên trang chủ.
   5. Lọc bài theo tag.
   6. Sửa bài và giữ nguyên slug đã xuất bản.
   7. Gỡ xuất bản và xác nhận trang công khai trả 404.
   8. Xóa bài sau bước xác nhận.
+  9. Logout hoặc phiên hết hạn buộc đăng nhập lại; request thay đổi có origin sai/thiếu trả `403 csrf_failed`.
+  10. Route tiếng Anh hoạt động, còn `/bai-viet/example`, `/the/example`, `/gioi-thieu` và `/quan-tri/bai-viet` trả `404`.
 - Kiểm tra metadata, canonical, JSON-LD, sitemap, RSS và robots.
 - Kiểm tra theme persistence qua class `.dark`, responsive, điều hướng bàn phím và AlertDialog xóa bài.
 - Kiểm tra scrollspy mục lục desktop/mobile: chỉ một heading active sau mốc đọc, fragment chỉ đổi khi người đọc chọn link, và `details` mobile không tự đổi trạng thái.
@@ -282,13 +301,13 @@ Các container dùng multi-stage build và chạy bằng non-root user khi khả
 
 - Blog chỉ có một tác giả và chỉ dùng tiếng Việt.
 - Giá trị nhận diện ban đầu là nội dung mẫu, được thay trong một cấu hình duy nhất.
-- Màn hình và API quản lý cố ý chưa có xác thực. Không có bảng user trong v1.
+- Khu vực quản lý dùng một tài khoản cố định và phiên cookie stateless; không có bảng user hoặc tài khoản độc giả trong v1.
 - Chưa có tài khoản độc giả, bình luận, lượt thích hoặc lưu bài.
 - Chưa có tìm kiếm toàn văn.
 - Chưa có đặt lịch đăng.
 - Chưa có upload ảnh hoặc object storage.
 - Chưa có rich-text editor.
-- Không hỗ trợ đa ngôn ngữ trong v1.
+- Không hỗ trợ đa ngôn ngữ trong v1; giao diện giữ tiếng Việt trong khi URL frontend dùng tiếng Anh.
 - Không có soft delete; thao tác xóa là vĩnh viễn.
 
 ## 8. Tài liệu tham khảo kỹ thuật

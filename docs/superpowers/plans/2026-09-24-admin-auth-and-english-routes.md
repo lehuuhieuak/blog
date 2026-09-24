@@ -104,6 +104,8 @@ components:
 
 Define `POST /admin/auth/login`, `GET /admin/auth/session`, and `POST /admin/auth/logout` exactly as the spec states. Apply `security: [{ adminSession: [] }]` and `401` to each protected admin operation; add `403` to unsafe operations including login and logout.
 
+Login returns `204` and sets an eight-hour `admin_session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, no `Domain`, and `Secure` when configured. Invalid credentials return the generic `401 unauthorized` envelope. Session lookup returns `200` with `data.username = "admin"` and UTC ISO-8601 `data.expires_at`; logout returns `204` and expires the same cookie even when it is missing or expired. A missing or mismatched `Origin` on any non-preflight admin `POST`, `PUT`, or `DELETE` returns `403 csrf_failed`; malformed login input returns `422 validation_error`.
+
 - [ ] **Step 3: Mark the design as approved and implementation active**
 
 Change the design status from “Implementation has not started” to “Approved; implementation tracked in `docs/superpowers/plans/2026-09-24-admin-auth-and-english-routes.md`.” Do not mark any implementation task complete.
