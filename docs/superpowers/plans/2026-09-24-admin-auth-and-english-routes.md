@@ -45,7 +45,7 @@
 - [x] Task 4: English frontend route migration
 - [x] Task 5: Frontend login, session guard, logout, and authenticated API calls
 - [x] Task 6: E2E migration, deployment documentation, and final validation
-- [ ] Final whole-branch audit
+- [x] Final whole-branch audit
 
 Append one line below after every implementer, review, fix round, validation, and commit. Include the subagent name, commit range, exact command, result, and remaining findings.
 
@@ -609,10 +609,17 @@ Stage only Task 6 files and the updated ledger, inspect the staged diff, and com
 git commit -m "test: cover authenticated admin workflow"
 ```
 
-- [ ] **Step 8: Run the final whole-branch audit**
+- [x] **Step 8: Run the final whole-branch audit**
 
 Give a fresh `gpt-6-luna`/`xhigh` reviewer the spec, this plan, progress ledger, commit list, and full diff from the pre-feature base. Require separate verdicts for spec compliance and code quality/security. Route every Critical or Important finding through the bounded fix-and-re-review loop before completion. Record deferred Minor findings and every orchestrator ruling in the ledger.
 
-- [ ] **Step 9: Report completion without pushing**
+- [x] **Step 9: Report completion without pushing**
 
 Report the task commits, exact validation commands and results, any unavailable checks, remaining risks, deferred Minor findings, and all recorded rulings. Leave the branch local; do not push or create a pull request.
+
+### Final audit and verification record — 2026-09-24
+
+- Two independent `gpt-6-luna` reviewers at `xhigh` audited spec compliance and code quality/security. Both initial Important findings were fixed and re-reviewed. Later Minor findings covering configuration documentation and exact session-expiry precision were also fixed and re-reviewed. The final audits found no remaining spec findings or Critical/Important findings.
+- Two deferred Minor findings remain: signed-session JSON parsing accepts unknown or duplicate fields, and CORS origin validation excludes unusual valid host forms such as IPv4-mapped IPv6 literals and trailing-dot DNS names.
+- Fresh HEAD `38771dc` validation passed: `cd backend && gofmt -w cmd/api/main.go internal/delivery/http/*.go && go vet ./... && go test ./...`; `cd frontend && npm run check && npm test && npm run build` (44/44 tests). The exact `task6-e2e` API and web images were rebuilt from final source, then the clean-stack Playwright suite passed 10/10 in 1.7 minutes.
+- No push, pull request, or merge was performed.
