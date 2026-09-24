@@ -11,6 +11,16 @@ Monorepo cho blog một tác giả bằng Go/Gin/PostgreSQL và Next.js App Rout
 
 Compose khởi động PostgreSQL, chạy migration versioned một lần, rồi mới khởi động API và Next.js. Kiểm tra `docker compose ps` để thấy các healthcheck. Dừng và xóa dữ liệu local bằng `docker compose down --volumes`.
 
+## Route và đăng nhập quản trị
+
+Các route công khai là `/`, `/articles/[slug]`, `/tags/[slug]`, `/about`, `/rss.xml`, `/sitemap.xml` và `/robots.txt`. Khu vực quản trị dùng `/admin/login`, `/admin/articles`, `/admin/articles/new` và `/admin/articles/[id]`. Các route tiếng Việt cũ trả về `404`.
+
+### Thông tin đăng nhập ban đầu
+
+Tài khoản quản trị cố định ban đầu có username `admin` và password `Hieu1234@@`. Hãy thay password này trước khi triển khai công khai. Không có màn hình đổi password: để đổi, tạo bcrypt hash cho password mới, thay hash credential cố định trong backend, rồi build và triển khai lại API. Username cũng là credential cố định của backend.
+
+Phiên đăng nhập được ký bằng `ADMIN_SESSION_SECRET`, lưu trong cookie `HttpOnly`, và hết hạn sau 8 giờ. Đổi session secret sẽ làm mất hiệu lực các phiên đã cấp. Local HTTP có thể dùng `ADMIN_COOKIE_SECURE=false`; với HTTPS production phải đặt `ADMIN_COOKIE_SECURE=true`.
+
 ## Phát triển
 
 Máy cần Go 1.27, Node.js 24 và PostgreSQL 18, hoặc có thể dùng các container Docker trong cấu hình trên.
@@ -31,9 +41,11 @@ CI chạy những kiểm tra trên, kiểm tra Compose và xác minh luồng t�
 
 ## Cấu hình production
 
-Toàn bộ cấu hình nằm trong biến môi trường. Quan trọng nhất là `DATABASE_URL` (backend), `CORS_ALLOWED_ORIGIN`, `SITE_URL`, `PUBLIC_API_URL` và các giá trị `SITE_*`. `SITE_URL` phải là URL canonical công khai; `PUBLIC_API_URL` phải là URL API mà trình duyệt của người đọc truy cập được. Không commit `.env` hoặc secret.
+Toàn bộ cấu hình nằm trong biến môi trường. Quan trọng nhất là `DATABASE_URL` (backend), `CORS_ALLOWED_ORIGIN`, `ADMIN_SESSION_SECRET`, `ADMIN_COOKIE_SECURE`, `SITE_URL`, `PUBLIC_API_URL` và các giá trị `SITE_*`. `SITE_URL` phải là URL canonical công khai; `PUBLIC_API_URL` phải là URL API mà trình duyệt của người đọc truy cập được. Không commit `.env` hoặc secret.
 
-Thông tin nhận diện blog mẫu được tập trung ở biến `SITE_NAME`, `SITE_AUTHOR`, `SITE_DESCRIPTION`, `SITE_SOCIAL_URL` (và fallback trong `frontend/src/lib/site.ts`). Không có xác thực trong khu vực `/quan-tri`; hãy chỉ đưa nó ra Internet khi lớp bảo vệ phù hợp đã được bổ sung ở phiên bản sau.
+Tạo signing secret từ bộ sinh số ngẫu nhiên mật mã an toàn, ví dụ `openssl rand -hex 32`; kết quả có 32 byte ngẫu nhiên. Đặt kết quả vào `ADMIN_SESSION_SECRET` trong runtime environment của server. Giá trị phải có ít nhất 32 byte; không dùng chuỗi mẫu trong `.env.example` hay `deploy/runtime.env.example` ở production. API sẽ không khởi động nếu secret thiếu hoặc ngắn hơn yêu cầu. Khi chạy qua HTTPS, đặt `ADMIN_COOKIE_SECURE=true` để cookie chỉ được gửi qua HTTPS.
+
+Thông tin nhận diện blog mẫu được tập trung ở biến `SITE_NAME`, `SITE_AUTHOR`, `SITE_DESCRIPTION`, `SITE_SOCIAL_URL` (và fallback trong `frontend/src/lib/site.ts`). Khu vực `/admin` yêu cầu phiên đăng nhập hợp lệ; API quản trị cũng xác minh phiên ở backend.
 
 ## CI/CD production
 
@@ -73,7 +85,7 @@ Tại **Branches → main**, bắt buộc các CI checks và ít nhất một co
 
 ### 2. Chuẩn bị production server
 
-Server cần Docker Engine + Docker Compose v2, Nginx và PostgreSQL đã có sẵn. Tạo user `deploy` không phải root, chỉ cho phép SSH bằng key; user này cần quyền dùng Docker. Lưu ý membership trong nhóm `docker` tương đương đặc quyền cao trên host, vì vậy chỉ cấp cho user deploy riêng và bảo vệ private key tương ứng.
+Server cần Docker Engine + Docker Compose v2, một reverse proxy HTTPS đã được cấu hình và PostgreSQL. Tạo user `deploy` không phải root, chỉ cho phép SSH bằng key; user này cần quyền dùng Docker. Lưu ý membership trong nhóm `docker` tương đương đặc quyền cao trên host, vì vậy chỉ cấp cho user deploy riêng và bảo vệ private key tương ứng.
 
 Sao chép các tệp deploy từ repository lên server:
 
@@ -85,7 +97,9 @@ sudo install -m 0755 deploy/deploy-production.sh /usr/local/bin/minimal-blog-dep
 sudo install -m 0640 -o root -g deploy deploy/runtime.env.example /etc/minimal-blog/runtime.env
 ```
 
-Sửa `/etc/minimal-blog/runtime.env`: thay password trong `DATABASE_URL`, đặt `CORS_ALLOWED_ORIGIN` đúng domain HTTPS và URL-encode password nếu có ký tự đặc biệt. File này chỉ tồn tại trên server; không đưa nó vào GitHub. API và migration truy cập PostgreSQL host qua `host.docker.internal:host-gateway`, nên PostgreSQL phải listen trên Docker bridge và `pg_hba.conf` chỉ cho phép subnet Docker truy cập — không mở PostgreSQL ra Internet.
+Sửa `/etc/minimal-blog/runtime.env`: thay password trong `DATABASE_URL`, đặt `CORS_ALLOWED_ORIGIN=https://blog.example.com`, `SITE_URL=https://blog.example.com`, `PUBLIC_API_URL=https://blog.example.com/api/v1`, `ADMIN_COOKIE_SECURE=true`, rồi đặt `ADMIN_SESSION_SECRET` thành giá trị ngẫu nhiên đã sinh cho server. URL-encode database password nếu có ký tự đặc biệt. File này chỉ tồn tại trên server; không đưa nó vào GitHub. API và migration truy cập PostgreSQL host qua `host.docker.internal:host-gateway`, nên PostgreSQL phải listen trên Docker bridge và `pg_hba.conf` chỉ cho phép subnet Docker truy cập — không mở PostgreSQL ra Internet.
+
+Cấu hình reverse proxy hiện có để domain HTTPS công khai dùng cùng một origin: chuyển `/api/v1/` tới API và các route còn lại, gồm `/admin/...`, tới Next.js. Không cần dựa vào allowlist IP của file cấu hình mẫu trong repository; ứng dụng yêu cầu đăng nhập cho trang quản trị và backend bảo vệ API bằng session. Cấu hình rate limit tại reverse proxy cho `POST /api/v1/admin/auth/login` để giảm nguy cơ dò credential.
 
 Đăng nhập GHCR bằng **PAT classic** có đúng scope `read:packages`, thực hiện dưới user `deploy`. Token chỉ được Docker lưu cục bộ trên server, không đưa vào GitHub Actions:
 
@@ -93,7 +107,7 @@ Sửa `/etc/minimal-blog/runtime.env`: thay password trong `DATABASE_URL`, đặ
 sudo -u deploy docker login ghcr.io -u <github-user>
 ```
 
-Nginx dùng file mẫu [`deploy/nginx/minimal-blog.conf`](deploy/nginx/minimal-blog.conf). Thay domain, certificate paths và `203.0.113.10` bằng IP được phép quản trị; sau đó chạy `sudo nginx -t && sudo systemctl reload nginx`. API và web chỉ lắng nghe loopback, còn Nginx là ingress HTTPS duy nhất. Allowlist bảo vệ cả `/quan-tri` và `/api/v1/admin` (bao gồm biến thể không có slash cuối).
+API và web chỉ lắng nghe loopback; reverse proxy hiện có là ingress HTTPS công khai. Hãy kiểm tra cấu hình proxy và TLS trước khi chuyển traffic tới ứng dụng.
 
 ### 3. Quy trình deploy hằng ngày
 
@@ -115,9 +129,10 @@ Sau deploy, xác nhận ít nhất:
 curl --fail https://blog.example.com/readyz
 curl --fail https://blog.example.com/api/v1/tags
 curl --fail https://blog.example.com/
+curl --fail https://blog.example.com/admin/login
 ```
 
-Từ một IP không nằm trong allowlist, `/quan-tri/` và `/api/v1/admin/` phải trả `403`. Lần đầu bật CD, nên deploy một revision vô hại và xác nhận HTTPS, manifest release và allowlist trước.
+Xác nhận trang đăng nhập quản trị dùng HTTPS, session cookie có thuộc tính `Secure`, các trang quản trị yêu cầu đăng nhập và reverse proxy áp dụng rate limit cho endpoint login. Lần đầu bật CD, nên deploy một revision vô hại và kiểm tra HTTPS, định tuyến cùng manifest release trước.
 
 ### 4. Rollback ứng dụng
 
