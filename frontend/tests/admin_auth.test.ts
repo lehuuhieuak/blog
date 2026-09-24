@@ -23,8 +23,11 @@ describe("safeAdminNext", () => {
     ["/admin/login?next=/admin/articles", "/admin/articles"],
     ["/admin/login/", "/admin/articles"],
     ["/admin/login/?next=/admin/articles", "/admin/articles"],
+    ["/admin/%6cogin", "/admin/articles"],
+    ["/admin/%6cogin/?next=/admin/articles", "/admin/articles"],
     ["/admin/%E0%A4%A", "/admin/articles"],
     ["/admin/articles/%", "/admin/articles"],
+    ["/admin/articles/%5csection", "/admin/articles"],
     ["/admin/articles/new?draft=1", "/admin/articles/new?draft=1"],
     ["/admin/articles/new?draft=1#section", "/admin/articles/new?draft=1"],
   ])("normalizes next=%s", (value, expected) => {

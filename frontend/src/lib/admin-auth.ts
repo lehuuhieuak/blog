@@ -8,12 +8,12 @@ export function safeAdminNext(value?: string | null): string {
 
   try {
     const destination = new URL(value, ADMIN_ORIGIN)
-    const decodedPathname = decodeURI(destination.pathname)
-    const normalizedPathname = destination.pathname.replace(/\/+$/, "")
+    const decodedPathname = decodeURIComponent(destination.pathname)
+    const normalizedPathname = decodedPathname.replace(/\/+$/, "")
 
     if (
       destination.origin !== ADMIN_ORIGIN ||
-      !destination.pathname.startsWith("/admin/") ||
+      !normalizedPathname.startsWith("/admin/") ||
       normalizedPathname === "/admin/login" ||
       decodedPathname.includes("\\")
     ) {
