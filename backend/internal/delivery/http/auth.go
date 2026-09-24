@@ -69,11 +69,11 @@ func (a *AdminAuth) validCredentials(username, password string) bool {
 }
 
 func (a *AdminAuth) issueCookie() (*http.Cookie, AdminSession, error) {
-	expiresAt := a.now().Add(adminSessionTTL).UTC().Truncate(time.Second)
+	expiresAt := a.now().Add(adminSessionTTL).UTC()
 	payload, err := json.Marshal(adminSessionPayload{
 		Version:   adminSessionVersion,
 		Username:  adminUsername,
-		ExpiresAt: expiresAt.Unix(),
+		ExpiresAt: expiresAt.UnixNano(),
 	})
 	if err != nil {
 		return nil, AdminSession{}, errors.New("encode admin session")
@@ -143,7 +143,7 @@ func (a *AdminAuth) sessionFromRequest(request *http.Request) (AdminSession, err
 	if session.Version != adminSessionVersion || session.Username != adminUsername {
 		return AdminSession{}, errInvalidSession
 	}
-	expiresAt := time.Unix(session.ExpiresAt, 0).UTC()
+	expiresAt := time.Unix(0, session.ExpiresAt).UTC()
 	if !a.now().Before(expiresAt) {
 		return AdminSession{}, errInvalidSession
 	}

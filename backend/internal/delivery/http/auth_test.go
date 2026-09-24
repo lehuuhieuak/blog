@@ -101,7 +101,7 @@ func TestAdminSessionCookieRoundTrip(t *testing.T) {
 	}
 }
 
-func TestAdminSessionExpiryUsesWholeSecondPrecision(t *testing.T) {
+func TestAdminSessionExpiryPreservesFractionalPrecision(t *testing.T) {
 	fixedNow := time.Date(2026, time.September, 24, 12, 0, 0, 900_000_000, time.UTC)
 	currentTime := fixedNow
 	auth, err := NewAdminAuth(strings.Repeat("s", 32), false, "https://blog.example", func() time.Time { return currentTime })
@@ -114,16 +114,15 @@ func TestAdminSessionExpiryUsesWholeSecondPrecision(t *testing.T) {
 		t.Fatalf("issueCookie() error = %v", err)
 	}
 
-	tokenStart := time.Unix(fixedNow.Unix(), 0).UTC()
-	wantExpiry := tokenStart.Add(8 * time.Hour)
+	wantExpiry := fixedNow.Add(8 * time.Hour)
 	if !session.ExpiresAt.Equal(wantExpiry) {
 		t.Fatalf("issueCookie() session expiry = %s, want %s", session.ExpiresAt.Format(time.RFC3339Nano), wantExpiry.Format(time.RFC3339Nano))
 	}
 	if !cookie.Expires.Equal(wantExpiry) {
 		t.Fatalf("issueCookie() cookie expiry = %s, want %s", cookie.Expires.Format(time.RFC3339Nano), wantExpiry.Format(time.RFC3339Nano))
 	}
-	if gotDuration := session.ExpiresAt.Sub(tokenStart); gotDuration != 8*time.Hour {
-		t.Fatalf("issueCookie() expiry duration at token precision = %s, want %s", gotDuration, 8*time.Hour)
+	if gotDuration := session.ExpiresAt.Sub(fixedNow); gotDuration != 8*time.Hour {
+		t.Fatalf("issueCookie() expiry duration = %s, want %s", gotDuration, 8*time.Hour)
 	}
 
 	encodedPayload, _, ok := strings.Cut(cookie.Value, ".")
@@ -138,15 +137,19 @@ func TestAdminSessionExpiryUsesWholeSecondPrecision(t *testing.T) {
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		t.Fatalf("decode issued token claims: %v", err)
 	}
-	if payload.ExpiresAt != wantExpiry.Unix() {
-		t.Fatalf("issued token expiry = %d, want %d", payload.ExpiresAt, wantExpiry.Unix())
+	if payload.ExpiresAt != wantExpiry.UnixNano() {
+		t.Fatalf("issued token expiry = %d, want %d", payload.ExpiresAt, wantExpiry.UnixNano())
 	}
 
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request.AddCookie(cookie)
 	currentTime = wantExpiry.Add(-time.Nanosecond)
-	if _, err := auth.sessionFromRequest(request); err != nil {
+	gotSession, err := auth.sessionFromRequest(request)
+	if err != nil {
 		t.Fatalf("sessionFromRequest() immediately before expiry error = %v, want valid session", err)
+	}
+	if !gotSession.ExpiresAt.Equal(wantExpiry) {
+		t.Fatalf("sessionFromRequest() expiry = %s, want %s", gotSession.ExpiresAt.Format(time.RFC3339Nano), wantExpiry.Format(time.RFC3339Nano))
 	}
 	currentTime = wantExpiry
 	if _, err := auth.sessionFromRequest(request); !errors.Is(err, errInvalidSession) {
@@ -176,9 +179,9 @@ func TestAdminSessionCookieRejectsInvalidTokens(t *testing.T) {
 	}{
 		{name: "mutated payload", value: parts[0] + "x." + parts[1]},
 		{name: "mutated signature", value: parts[0] + "." + parts[1] + "x"},
-		{name: "wrong version", value: signedTestPayload(t, secret, `{"version":2,"username":"admin","expires_at":1790270400}`)},
-		{name: "wrong username", value: signedTestPayload(t, secret, `{"version":1,"username":"root","expires_at":1790270400}`)},
-		{name: "expired", value: signedTestPayload(t, secret, `{"version":1,"username":"admin","expires_at":1790251199}`)},
+		{name: "wrong version", value: signedTestPayload(t, secret, `{"version":2,"username":"admin","expires_at":1790270400000000000}`)},
+		{name: "wrong username", value: signedTestPayload(t, secret, `{"version":1,"username":"root","expires_at":1790270400000000000}`)},
+		{name: "expired", value: signedTestPayload(t, secret, `{"version":1,"username":"admin","expires_at":1790251199000000000}`)},
 		{name: "extra separator", value: cookie.Value + ".extra"},
 		{name: "invalid base64url", value: "not$base64.sig"},
 	}
