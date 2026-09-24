@@ -32,3 +32,6 @@ go.work.sum
 .DS_Store
 .idea/
 .vscode/
+
+# Local Git worktrees
+.worktrees/
