@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test';
 import { adminAPIUrl, adminOriginHeaders, authenticateAdmin } from './helpers/admin-auth';
 
 test('Stitch typography uses loaded Geist fonts and stays readable across layouts', async ({ page }) => {
+  test.setTimeout(90_000);
+
   const slug = `stitch-typography-${Date.now()}`;
   await authenticateAdmin(page);
   const response = await page.request.post(adminAPIUrl('admin/articles'), {

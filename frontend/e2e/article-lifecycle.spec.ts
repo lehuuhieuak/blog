@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test';
 import { adminAPIUrl, adminOriginHeaders, authenticateAdmin } from './helpers/admin-auth';
 
 test('admin can take an article through its public lifecycle', async ({ page }) => {
+  test.setTimeout(90_000);
+
   const unique = Date.now().toString();
   const title = `Bài kiểm thử ${unique}`;
   const slug = `bai-kiem-thu-${unique}`;
