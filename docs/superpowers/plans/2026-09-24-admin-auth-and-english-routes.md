@@ -40,7 +40,7 @@
 ## Persistent Progress Ledger
 
 - [ ] Task 1: Source of truth and API contract
-- [ ] Task 2: Backend credential and signed-session core
+- [x] Task 2: Backend credential and signed-session core
 - [ ] Task 3: Backend auth HTTP flow, middleware, and runtime configuration
 - [ ] Task 4: English frontend route migration
 - [ ] Task 5: Frontend login, session guard, logout, and authenticated API calls
@@ -48,6 +48,9 @@
 - [ ] Final whole-branch audit
 
 Append one line below after every implementer, review, fix round, validation, and commit. Include the subagent name, commit range, exact command, result, and remaining findings.
+
+- 2026-09-24 | `/root/task2_session_core` | `88ff335..HEAD` (Task 2 commit) | RED: `docker run --rm -v "$PWD/backend:/app" -w /app -v blog-auth-go-mod:/go/pkg/mod -v blog-auth-go-cache:/root/.cache/go-build golang:1.27-alpine go test ./internal/delivery/http -run 'TestAdminAuth(Credentials|Config)' -count=1` and session equivalent both failed to compile on missing auth APIs as expected; GREEN focused tests and `go vet ./internal/delivery/http` passed. No remaining code findings; Go skill unavailable in this environment and repository rules followed directly.
+- 2026-09-24 | `/root/task2_session_core` | `88ff335..HEAD` | Validation: `docker run --rm -v "$PWD/backend:/app" -w /app -v blog-auth-go-mod:/go/pkg/mod -v blog-auth-go-cache:/root/.cache/go-build golang:1.27-alpine go test ./...` passed; focused `go vet`, `gofmt` check, and `git diff --check` passed. No remaining code findings.
 
 ### Task 1: Update the Source of Truth and API Contract
 
@@ -142,7 +145,7 @@ git commit -m "docs: define admin authentication contract"
 - Consumes: username `admin`, bcrypt hash `$2b$12$M2x1.Uei/N/F8nKzWIoT7eoGwZpBF/hRdYPasq//df2ftNgyk5Wde`, runtime signing secret, secure-cookie flag, eight-hour TTL, and an injected clock.
 - Produces: `NewAdminAuth(secret string, secure bool, allowedOrigin string, now func() time.Time) (*AdminAuth, error)`, `(*AdminAuth).validCredentials(username, password string) bool`, `(*AdminAuth).issueCookie() (*http.Cookie, AdminSession, error)`, `(*AdminAuth).clearCookie() *http.Cookie`, and `(*AdminAuth).sessionFromRequest(*http.Request) (AdminSession, error)`.
 
-- [ ] **Step 1: Write failing table-driven tests for credentials and constructor validation**
+- [x] **Step 1: Write failing table-driven tests for credentials and constructor validation**
 
 Create `auth_test.go` with cases equivalent to:
 
@@ -163,13 +166,13 @@ func TestAdminAuthCredentials(t *testing.T) {
 
 Add constructor cases for 31-byte secret rejection, 32-byte acceptance, and nil clock rejection. Assert errors without logging the supplied values.
 
-- [ ] **Step 2: Run the focused test and confirm red state**
+- [x] **Step 2: Run the focused test and confirm red state**
 
 Run `cd backend && go test ./internal/delivery/http -run 'TestAdminAuth(Credentials|Config)' -count=1`.
 
 Expected: FAIL because `NewAdminAuth` and `AdminAuth` do not exist.
 
-- [ ] **Step 3: Add the minimal credential/config implementation**
+- [x] **Step 3: Add the minimal credential/config implementation**
 
 Promote `golang.org/x/crypto` to a direct dependency and use `bcrypt.CompareHashAndPassword`. Define:
 
@@ -196,21 +199,21 @@ type AdminAuth struct {
 
 `NewAdminAuth` copies the secret bytes, requires at least 32 bytes, requires a non-nil clock, and trims/rejects an empty allowed origin. `validCredentials` always performs bcrypt comparison and combines it with a constant-time username comparison so an unknown username does not bypass the expensive password check.
 
-- [ ] **Step 4: Add failing session round-trip and rejection tests**
+- [x] **Step 4: Add failing session round-trip and rejection tests**
 
 Use a fixed UTC clock. Test that `issueCookie` creates a cookie with `Name=admin_session`, `Path=/`, `HttpOnly=true`, `SameSite=http.SameSiteLaxMode`, `MaxAge=28800`, exact UTC expiry, and the configured `Secure` value. Convert the cookie into a request and verify the session. Add table rows that mutate the payload, signature, version, username, expiry, separator count, and base64 encoding; all must return the same sentinel `errInvalidSession` without panicking. Verify `clearCookie` uses the same name/path/security attributes and `MaxAge=-1`.
 
-- [ ] **Step 5: Run the focused session tests and confirm red state**
+- [x] **Step 5: Run the focused session tests and confirm red state**
 
 Run `cd backend && go test ./internal/delivery/http -run 'TestAdmin(Session|Cookie)' -count=1`.
 
 Expected: FAIL because cookie issue/verification is incomplete.
 
-- [ ] **Step 6: Implement the minimal signed-session codec**
+- [x] **Step 6: Implement the minimal signed-session codec**
 
 Encode a private payload containing version `1`, username, and Unix expiry as base64url JSON; append a base64url HMAC-SHA-256 signature separated by one dot. Verify using `hmac.Equal`, exact version/username, and `now().Before(expiresAt)`. Map every parse/signature/expiry failure to `errInvalidSession`. Never include the password hash or signing secret in the payload or an error.
 
-- [ ] **Step 7: Format and validate the backend core**
+- [x] **Step 7: Format and validate the backend core**
 
 Run:
 
@@ -224,7 +227,7 @@ go vet ./internal/delivery/http
 
 Expected: all focused tests and vet pass.
 
-- [ ] **Step 8: Commit the backend auth core**
+- [x] **Step 8: Commit the backend auth core**
 
 Stage only the auth files, module files, and updated progress ledger; inspect the staged diff and commit:
 
