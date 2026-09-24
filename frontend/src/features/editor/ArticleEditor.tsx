@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminArticle, ArticleInput, MarkdownPreview } from "@/features/article/types"
+import { adminBrowserFetch } from "@/lib/browser-api"
 import { routes } from "@/lib/routes"
 
 type Action = "preview" | "draft" | "published" | "delete"
@@ -109,7 +110,7 @@ export default function ArticleEditor({ article, apiBase }: Props) {
   })
 
   const callAPI = async <T,>(path: string, method: string, body?: unknown): Promise<T> => {
-    const response = await fetch(`${apiBase}${path}`, {
+    const response = await adminBrowserFetch(apiBase, path, {
       method,
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),

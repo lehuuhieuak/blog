@@ -43,7 +43,7 @@
 - [x] Task 2: Backend credential and signed-session core
 - [ ] Task 3: Backend auth HTTP flow, middleware, and runtime configuration
 - [ ] Task 4: English frontend route migration
-- [ ] Task 5: Frontend login, session guard, logout, and authenticated API calls
+- [x] Task 5: Frontend login, session guard, logout, and authenticated API calls
 - [ ] Task 6: E2E migration, deployment documentation, and final validation
 - [ ] Final whole-branch audit
 
@@ -51,6 +51,7 @@ Append one line below after every implementer, review, fix round, validation, an
 
 - 2026-09-24 | `/root/task2_session_core` | `88ff335..HEAD` (Task 2 commit) | RED: `docker run --rm -v "$PWD/backend:/app" -w /app -v blog-auth-go-mod:/go/pkg/mod -v blog-auth-go-cache:/root/.cache/go-build golang:1.27-alpine go test ./internal/delivery/http -run 'TestAdminAuth(Credentials|Config)' -count=1` and session equivalent both failed to compile on missing auth APIs as expected; GREEN focused tests and `go vet ./internal/delivery/http` passed. No remaining code findings; Go skill unavailable in this environment and repository rules followed directly.
 - 2026-09-24 | `/root/task2_session_core` | `88ff335..HEAD` | Validation: `docker run --rm -v "$PWD/backend:/app" -w /app -v blog-auth-go-mod:/go/pkg/mod -v blog-auth-go-cache:/root/.cache/go-build golang:1.27-alpine go test ./...` passed; focused `go vet`, `gofmt` check, and `git diff --check` passed. No remaining code findings.
+- 2026-09-24 | `/root/task5_frontend_auth` | `6b79651685b34813bb2ae58ba2403cba722c3c38..HEAD` | RED/GREEN: `docker run --rm -v "$PWD/frontend:/app" -w /app node:24-alpine npm test -- --run tests/admin_auth.test.ts` first failed on the missing auth module; cookie-forwarding tests failed on missing `getAdminSession`; proxy tests failed on the missing proxy; browser-call tests failed on missing client auth helpers. The focused tests passed after each implementation. Final validation: `docker run --rm -v "$PWD/frontend:/app" -w /app node:24-alpine sh -lc 'npm test -- --run tests/admin_auth.test.ts tests/api.test.ts tests/routes.test.ts && npm run check && npm run build'` passed; full `npm test` passed 39/39; `git diff --check` passed. Task 5 commit: `feat: add admin login and session guard`. No remaining findings.
 
 ### Task 1: Update the Source of Truth and API Contract
 
@@ -449,7 +450,7 @@ git commit -m "feat: migrate frontend routes to English"
 - Consumes: backend auth endpoints from Task 3 and route helpers from Task 4.
 - Produces: `ADMIN_SESSION_COOKIE`, `safeAdminNext(value?: string | null): string`, `browserAPIBase(): string`, `getAdminSession(): Promise<{ data: AdminSession }>`, optimistic proxy routing, login/logout UI, SSR admin guard, and credentialed editor mutations.
 
-- [ ] **Step 1: Write failing safe-destination tests**
+- [x] **Step 1: Write failing safe-destination tests**
 
 Create `admin_auth.test.ts` with:
 
@@ -469,39 +470,39 @@ it.each([
 
 Add malformed URL encodings and backslash-based external forms to the fallback rows.
 
-- [ ] **Step 2: Run the destination test and confirm red state**
+- [x] **Step 2: Run the destination test and confirm red state**
 
 Run `cd frontend && npm test -- --run tests/admin_auth.test.ts`.
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Implement pure auth/navigation helpers and browser API config**
+- [x] **Step 3: Implement pure auth/navigation helpers and browser API config**
 
 Define `ADMIN_SESSION_COOKIE = "admin_session"`. Parse candidate destinations with `new URL(value, "http://admin.local")`; accept only the same synthetic origin, a pathname beginning `/admin/`, and a pathname other than `/admin/login`. Return normalized pathname plus search; discard fragments. Move `apiBaseForBrowser` from `lib/api.ts` into `browser-api.ts` as `browserAPIBase`, preserving the current `PUBLIC_API_URL` fallback.
 
-- [ ] **Step 4: Write failing server API cookie-forwarding tests**
+- [x] **Step 4: Write failing server API cookie-forwarding tests**
 
 Mock `next/headers` so `cookies().get("admin_session")` returns a known value. Assert `getAdminSession`, `listAdminArticles`, and `getAdminArticle` send exactly `Cookie: admin_session=<encoded value>` to the internal API. Assert `listArticles`, `getArticle`, and `listTags` omit `Cookie`. Add a `401` response case that remains an `APIError` with status `401`.
 
-- [ ] **Step 5: Implement admin-only cookie forwarding**
+- [x] **Step 5: Implement admin-only cookie forwarding**
 
 Keep the public `request` helper cookie-free. Add an `adminRequest` helper that reads `ADMIN_SESSION_COOKIE` using async `cookies()`, constructs a `Headers` object, forwards only that cookie to the trusted `API_URL`, and delegates error parsing to the existing request logic. Route `listAdminArticles`, `getAdminArticle`, and new `getAdminSession` through `adminRequest`. Define the `AdminSession` TypeScript shape with `username: "admin"` and `expires_at: string`.
 
-- [ ] **Step 6: Add optimistic Proxy routing and the authoritative server layout check**
+- [x] **Step 6: Add optimistic Proxy routing and the authoritative server layout check**
 
 In `proxy.ts`, match `/admin/:path*`, allow `/admin/login`, redirect requests without the cookie to `/admin/login?next=<pathname+search>`, and place the validated current path in an internal `x-admin-return-to` request header when a cookie is present. In the async admin layout, call `getAdminSession`; on `401`, read that header, pass it through `safeAdminNext`, and redirect to login. Re-throw non-auth API errors. Remove the old warning banner and render `LogoutButton` in the header.
 
-- [ ] **Step 7: Build the accessible login and logout client islands**
+- [x] **Step 7: Build the accessible login and logout client islands**
 
 The login page exports `noindex` metadata, validates its `next` search parameter server-side, and passes it plus `browserAPIBase()` to `LoginForm`. The form uses existing `Label`, `Input`, `Button`, and `Alert` components; labels remain visible; inputs use `autoComplete="username"` and `autoComplete="current-password"`; submission sends JSON with `credentials: "include"`. On `204`, navigate with `window.location.assign(nextPath)`; on failure show one generic Vietnamese message and restore the enabled submit button.
 
 `LogoutButton` posts with `credentials: "include"`; on `204`, navigate to `/admin/login`. On failure, show a compact accessible error status without silently reporting success.
 
-- [ ] **Step 8: Authenticate browser editor requests and handle expiry**
+- [x] **Step 8: Authenticate browser editor requests and handle expiry**
 
 Update editor fetches to use `credentials: "include"`. If a response is `401`, compute `window.location.pathname + window.location.search`, normalize it as a local `/admin/` path, and navigate to `/admin/login?next=<encoded>`. Update create/edit pages to import `browserAPIBase` from the client-safe module. Keep all backend API endpoint strings unchanged.
 
-- [ ] **Step 9: Run focused frontend tests, type-check, and build**
+- [x] **Step 9: Run focused frontend tests, type-check, and build**
 
 Run:
 
@@ -514,7 +515,7 @@ npm run build
 
 Expected: all tests, type-check, and production build pass. Build output includes `/admin/login`; public pages remain server-rendered.
 
-- [ ] **Step 10: Commit frontend authentication**
+- [x] **Step 10: Commit frontend authentication**
 
 Stage only Task 5 files and the ledger, inspect the staged diff, and commit:
 

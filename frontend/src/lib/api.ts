@@ -7,6 +7,9 @@ import type {
   PublicArticle,
   Tag,
 } from "@/features/article/types"
+import { cookies } from "next/headers"
+
+import { ADMIN_SESSION_COOKIE } from "./admin-auth"
 
 const serverAPIBase = process.env.API_URL ?? "http://localhost:8080/api/v1"
 
@@ -17,10 +20,13 @@ export class APIError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers)
+  if (!headers.has("Accept")) headers.set("Accept", "application/json")
+
   const response = await fetch(`${serverAPIBase}${path}`, {
     ...init,
     cache: "no-store",
-    headers: { Accept: "application/json", ...init?.headers },
+    headers,
   })
   if (!response.ok) {
     let message = "Không thể tải dữ liệu."
@@ -33,6 +39,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new APIError(response.status, message)
   }
   return response.json() as Promise<T>
+}
+
+async function adminRequest<T>(path: string): Promise<T> {
+  const cookieValue = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value
+  const headers = new Headers({ Accept: "application/json" })
+
+  if (cookieValue) {
+    headers.set("Cookie", `${ADMIN_SESSION_COOKIE}=${encodeURIComponent(cookieValue)}`)
+  }
+
+  return request<T>(path, { headers })
 }
 
 function query(parameters: Record<string, string | number | undefined>): string {
@@ -57,15 +74,20 @@ export function listTags(): Promise<{ data: Tag[] }> {
 }
 
 export function listAdminArticles(page = 1, status?: string): Promise<ListResponse<AdminArticle>> {
-  return request(`/admin/articles${query({ page, status })}`)
+  return adminRequest(`/admin/articles${query({ page, status })}`)
 }
 
 export function getAdminArticle(id: string): Promise<{ data: AdminArticle }> {
-  return request(`/admin/articles/${encodeURIComponent(id)}`)
+  return adminRequest(`/admin/articles/${encodeURIComponent(id)}`)
 }
 
-export function apiBaseForBrowser(): string {
-  return process.env.PUBLIC_API_URL ?? "http://localhost:8080/api/v1"
+export type AdminSession = {
+  username: "admin"
+  expires_at: string
+}
+
+export function getAdminSession(): Promise<{ data: AdminSession }> {
+  return adminRequest("/admin/auth/session")
 }
 
 export function serializeArticleInput(input: ArticleInput): RequestInit {

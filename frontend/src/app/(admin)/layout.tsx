@@ -1,7 +1,13 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
 
 import ThemeToggle from "@/components/ThemeToggle"
+import LogoutButton from "@/features/auth/LogoutButton"
+import { APIError, getAdminSession } from "@/lib/api"
+import { safeAdminNext } from "@/lib/admin-auth"
+import { browserAPIBase } from "@/lib/browser-api"
 import { routes } from "@/lib/routes"
 import { site } from "@/lib/site"
 
@@ -10,15 +16,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  try {
+    await getAdminSession()
+  } catch (error) {
+    if (error instanceof APIError && error.status === 401) {
+      const returnTo = safeAdminNext((await headers()).get("x-admin-return-to"))
+      redirect(`${routes.adminLogin}?next=${encodeURIComponent(returnTo)}`)
+    }
+    throw error
+  }
+
   return (
     <>
       <a className="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
-      <aside className="border-b border-border bg-muted/55" role="status">
-        <div className="mx-auto flex min-h-8 w-[min(calc(100%-2rem),88rem)] items-center py-1 font-mono text-xs text-muted-foreground sm:w-[min(calc(100%-4rem),88rem)]">
-          <p>Khu vực quản trị chưa có xác thực. Không chia sẻ URL này trên môi trường công khai.</p>
-        </div>
-      </aside>
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 w-[min(calc(100%-2rem),88rem)] items-center gap-4 sm:w-[min(calc(100%-4rem),88rem)]">
           <a className="mr-auto text-lg font-semibold tracking-[-0.02em] no-underline hover:bg-transparent hover:opacity-70" href={routes.adminArticles}>
@@ -29,6 +40,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Bài viết mới
             </a>
           </nav>
+          <LogoutButton apiBase={browserAPIBase()} />
           <ThemeToggle />
         </div>
       </header>

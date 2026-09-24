@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import ArticleEditor from "@/features/editor/ArticleEditor"
-import { APIError, apiBaseForBrowser, getAdminArticle } from "@/lib/api"
+import { APIError, getAdminArticle } from "@/lib/api"
+import { browserAPIBase } from "@/lib/browser-api"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -20,7 +21,7 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
   try {
     const { data } = await getAdminArticle(id)
     return (
-      <ArticleEditor article={data} apiBase={apiBaseForBrowser()} />
+      <ArticleEditor article={data} apiBase={browserAPIBase()} />
     )
   } catch (error) {
     if (error instanceof APIError && error.status === 404) notFound()
