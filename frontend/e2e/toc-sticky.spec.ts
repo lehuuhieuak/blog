@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { adminAPIUrl, adminOriginHeaders, authenticateAdmin } from './helpers/admin-auth';
+
 interface CreatedArticle {
   id: string;
 }
@@ -16,11 +18,12 @@ function longMarkdown(): string {
 
 test('TOC stays within the article and highlights the heading at the reading marker', async ({ page }) => {
   const unique = Date.now().toString();
-  const apiBase = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1';
   const createdArticleIDs: string[] = [];
+  await authenticateAdmin(page);
 
   async function createArticle(article: { title: string; slug: string; content_markdown: string }): Promise<CreatedArticle> {
-    const response = await page.request.post(`${apiBase}/admin/articles`, {
+    const response = await page.request.post(adminAPIUrl('admin/articles'), {
+      headers: adminOriginHeaders(),
       data: {
         ...article,
         excerpt: 'Bài viết dùng để kiểm tra mục lục sticky.',
@@ -48,7 +51,7 @@ test('TOC stays within the article and highlights the heading at the reading mar
     });
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(`/bai-viet/${longArticleSlug}`);
+    await page.goto(`/articles/${longArticleSlug}`);
 
     const toc = page.locator('.toc--desktop');
     const sidebar = page.locator('.article-layout__toc');
@@ -102,7 +105,7 @@ test('TOC stays within the article and highlights the heading at the reading mar
     expect(endPositions.tocBottom).toBeLessThanOrEqual(endPositions.footerTop + 1);
 
     await page.setViewportSize({ width: 375, height: 900 });
-    await page.goto(`/bai-viet/${longArticleSlug}`);
+    await page.goto(`/articles/${longArticleSlug}`);
     const compactTOC = page.locator('.toc--compact');
     await expect(compactTOC).not.toHaveAttribute('open', '');
     await page.evaluate(() => {
@@ -117,7 +120,7 @@ test('TOC stays within the article and highlights the heading at the reading mar
     await compactTOC.locator('summary').click();
     await expect(activeCompactLink).toBeVisible();
 
-    const shortArticleResponse = await page.goto(`/bai-viet/khong-muc-luc-${unique}`);
+    const shortArticleResponse = await page.goto(`/articles/khong-muc-luc-${unique}`);
     expect(shortArticleResponse?.status()).toBe(200);
     await expect(page.getByRole("heading", { name: `Bài viết không mục lục ${unique}`, exact: true })).toBeVisible();
     await expect(page.locator('.toc--desktop')).toHaveCount(0);
@@ -125,7 +128,9 @@ test('TOC stays within the article and highlights the heading at the reading mar
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
   } finally {
     for (const articleID of createdArticleIDs) {
-      await page.request.delete(`${apiBase}/admin/articles/${articleID}`);
+      await page.request.delete(adminAPIUrl(`admin/articles/${articleID}`), {
+        headers: adminOriginHeaders(),
+      });
     }
   }
 });

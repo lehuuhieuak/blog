@@ -1,22 +1,30 @@
 import { expect, test } from '@playwright/test';
 
+import { adminAPIUrl, adminOriginHeaders, authenticateAdmin } from './helpers/admin-auth';
+
 test('admin can take an article through its public lifecycle', async ({ page }) => {
   const unique = Date.now().toString();
   const title = `Bài kiểm thử ${unique}`;
   const slug = `bai-kiem-thu-${unique}`;
-  const editPath = /\/quan-tri\/bai-viet\/[0-9a-f-]{36}$/;
-  const apiBase = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1';
+  const editPath = /\/admin\/articles\/[0-9a-f-]{36}$/;
   const extraArticleIDs: string[] = [];
   let mainArticleID: string | undefined;
 
   try {
+    await authenticateAdmin(page);
 
-    const missingArticle = await page.goto(`/bai-viet/khong-ton-tai-${unique}`);
+    const missingArticle = await page.goto(`/articles/khong-ton-tai-${unique}`);
     expect(missingArticle?.status()).toBe(404);
+    for (const removedRoute of ['/bai-viet/example', '/the/example', '/gioi-thieu', '/quan-tri/bai-viet']) {
+      const removedRouteResponse = await page.goto(removedRoute);
+      expect(removedRouteResponse?.status(), removedRoute).toBe(404);
+    }
     const explicitNotFound = await page.goto("/404");
     expect(explicitNotFound?.status()).toBe(404);
 
-    await page.goto('/quan-tri/bai-viet/moi');
+    await page.goto('/admin/articles/new');
+    await expect(page.locator('a[href="/admin/articles"]')).toBeVisible();
+    await expect(page.locator('a[href="/admin/articles/new"]')).toBeVisible();
     await expect(page.locator("meta[name=robots]")).toHaveAttribute("content", /noindex/);
     await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
     await page.getByLabel('Tiêu đề').fill(title);
@@ -29,11 +37,12 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     const editURL = page.url();
     mainArticleID = new URL(editURL).pathname.split("/").pop();
 
-    const draftPublic = await page.goto(`/bai-viet/${slug}`);
+    const draftPublic = await page.goto(`/articles/${slug}`);
     expect(draftPublic?.status()).toBe(404);
 
     await page.goto('/');
     await expect(page.getByRole('link', { name: title })).toHaveCount(0);
+    await expect(page.locator('a[href="/about"]').first()).toBeVisible();
 
     await page.goto(editURL);
     await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
@@ -46,11 +55,12 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
 
     await page.goto('/');
     await expect(page.getByRole('link', { name: title })).toBeVisible();
-    const publicHTML = await page.request.get(`/bai-viet/${slug}`);
+    const publicHTML = await page.request.get(`/articles/${slug}`);
     expect(publicHTML.status()).toBe(200);
     expect(await publicHTML.text()).toContain(title);
-    await page.goto(`/the/golang`);
+    await page.goto(`/tags/golang`);
     await expect(page.getByRole('link', { name: title })).toBeVisible();
+    await expect(page.locator(`a[href="/articles/${slug}"]`)).toBeVisible();
 
     await page.goto(editURL);
     await expect(page.locator('.editor')).toHaveAttribute('data-editor-ready', 'true');
@@ -64,9 +74,12 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     ]);
     await expect(page.locator('input[name="slug"]')).toHaveValue(slug);
 
-    await page.goto(`/bai-viet/${slug}`);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new RegExp(`/bai-viet/${slug}$`));
-    expect(await page.locator('script[type="application/ld+json"]').evaluate((element) => element.innerHTML)).toContain(title);
+    await page.goto(`/articles/${slug}`);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new RegExp(`/articles/${slug}$`));
+    await expect(page.locator(`a[href="/tags/golang"]`)).toBeVisible();
+    const jsonLD = JSON.parse(await page.locator('script[type="application/ld+json"]').evaluate((element) => element.innerHTML)) as { headline: string; mainEntityOfPage: string };
+    expect(jsonLD.headline).toBe(title);
+    expect(new URL(jsonLD.mainEntityOfPage).pathname).toBe(`/articles/${slug}`);
 
     for (const viewport of [
       { width: 375, desktopTOC: false },
@@ -75,7 +88,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
       { width: 1440, desktopTOC: true },
     ]) {
       await page.setViewportSize({ width: viewport.width, height: 900 });
-      await page.goto(`/bai-viet/${slug}`);
+      await page.goto(`/articles/${slug}`);
       expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
       if (viewport.desktopTOC) {
         await expect(page.locator('.toc--desktop')).toBeVisible();
@@ -101,12 +114,15 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     await expect(page.locator('#main-content')).toBeFocused();
     await page.getByRole('link', { name: '#Golang' }).focus();
     await expect(page.getByRole('link', { name: '#Golang' })).toBeFocused();
-    expect(await (await page.goto('/sitemap.xml'))?.text()).toContain(`/bai-viet/${slug}`);
-    expect(await (await page.goto('/rss.xml'))?.text()).toContain(title);
-    expect(await (await page.goto('/robots.txt'))?.text()).toContain('Disallow: /quan-tri/');
+    expect(await (await page.goto('/sitemap.xml'))?.text()).toContain(`/articles/${slug}`);
+    const rss = await (await page.goto('/rss.xml'))?.text();
+    expect(rss).toContain(title);
+    expect(rss).toContain(`/articles/${slug}`);
+    expect(await (await page.goto('/robots.txt'))?.text()).toContain('Disallow: /admin/');
 
     for (const index of Array.from({ length: 10 }, (_, item) => item)) {
-      const response = await page.request.post(`${apiBase}/admin/articles`, {
+      const response = await page.request.post(adminAPIUrl('admin/articles'), {
+        headers: adminOriginHeaders(),
         data: {
           title: `Bài phân trang ${unique}-${index}`,
           slug: `bai-phan-trang-${unique}-${index}`,
@@ -153,7 +169,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     await expect(page.locator("html")).not.toHaveClass(/(?:^|\s)dark(?:\s|$)/);
 
     await page.setViewportSize({ width: 375, height: 900 });
-    await page.goto('/quan-tri/bai-viet');
+    await page.goto('/admin/articles');
     expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
     await page.locator('.admin-table-scroll').focus();
     await expect(page.locator('.admin-table-scroll')).toBeFocused();
@@ -189,7 +205,7 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     await page.getByRole("button", { name: "Lưu nháp" }).click();
     await expect(page.locator("[data-editor-status]")).toHaveText("Đã lưu nháp.");
     await expect(page.locator("[data-article-status]")).toHaveText("Nháp");
-    const unpublished = await page.goto(`/bai-viet/${slug}`);
+    const unpublished = await page.goto(`/articles/${slug}`);
     expect(unpublished?.status()).toBe(404);
 
     await page.goto(editURL);
@@ -206,10 +222,12 @@ test('admin can take an article through its public lifecycle', async ({ page }) 
     await expect(deleteDialog).toBeHidden();
     await deleteTrigger.click();
     await deleteDialog.getByRole("button", { name: "Xóa vĩnh viễn", exact: true }).click();
-    await expect(page).toHaveURL("/quan-tri/bai-viet");
+    await expect(page).toHaveURL("/admin/articles");
   } finally {
     for (const articleID of [...extraArticleIDs, ...(mainArticleID ? [mainArticleID] : [])]) {
-      const response = await page.request.delete(`${apiBase}/admin/articles/${articleID}`);
+      const response = await page.request.delete(adminAPIUrl(`admin/articles/${articleID}`), {
+        headers: adminOriginHeaders(),
+      });
       expect([204, 404]).toContain(response.status());
     }
   }

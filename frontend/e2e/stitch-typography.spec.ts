@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+import { adminAPIUrl, adminOriginHeaders, authenticateAdmin } from './helpers/admin-auth';
+
 test('Stitch typography uses loaded Geist fonts and stays readable across layouts', async ({ page }) => {
-  const apiBase = process.env.E2E_API_BASE_URL ?? 'http://localhost:8080/api/v1';
   const slug = `stitch-typography-${Date.now()}`;
-  const response = await page.request.post(`${apiBase}/admin/articles`, {
+  await authenticateAdmin(page);
+  const response = await page.request.post(adminAPIUrl('admin/articles'), {
+    headers: adminOriginHeaders(),
     data: {
       title: 'Tiếng Việt: Những ghi chép về thiết kế và mã nguồn',
       slug,
@@ -21,14 +24,14 @@ test('Stitch typography uses loaded Geist fonts and stays readable across layout
       await page.setViewportSize({ width, height: 900 });
       for (const colorScheme of ['light', 'dark'] as const) {
         await page.emulateMedia({ colorScheme });
-        for (const route of ['/', '/gioi-thieu', '/404', `/the/${article.tags[0].slug}`, `/bai-viet/${slug}`, '/quan-tri/bai-viet', '/quan-tri/bai-viet/moi', `/quan-tri/bai-viet/${article.id}`]) {
+        for (const route of ['/', '/about', '/404', `/tags/${article.tags[0].slug}`, `/articles/${slug}`, '/admin/articles', '/admin/articles/new', `/admin/articles/${article.id}`]) {
           await page.goto(route);
           await page.evaluate(() => document.fonts.ready);
           expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), `${route} at ${width}`).toBe(false);
           const mainBox = await page.locator('main').boundingBox();
           expect(mainBox?.x, `${route} keeps a reading gutter`).toBeGreaterThanOrEqual(16);
-          if (width === 1440 && (route.endsWith('/moi') || route.endsWith(article.id))) {
-            const expectedSize = route.endsWith('/moi') ? 32 : 20;
+          if (width === 1440 && (route.endsWith('/new') || route.endsWith(article.id))) {
+            const expectedSize = route.endsWith('/new') ? 32 : 20;
             expect(await page.locator('input[name=title]').evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBe(expectedSize);
           }
           const heading = page.locator('h1');
@@ -38,7 +41,7 @@ test('Stitch typography uses loaded Geist fonts and stays readable across layout
         }
       }
     }
-    await page.goto(`/bai-viet/${slug}`);
+    await page.goto(`/articles/${slug}`);
     await page.evaluate(() => document.fonts.ready);
     const code = page.locator('.article-content pre code');
     await expect(code).toBeVisible();
@@ -56,14 +59,16 @@ test('Stitch typography uses loaded Geist fonts and stays readable across layout
     }
     await cdp.detach();
     await page.setViewportSize({ width: 375, height: 900 });
-    await page.goto('/quan-tri/bai-viet/moi');
+    await page.goto('/admin/articles/new');
     for (const selector of ['input[name="slug"]', 'textarea[name="content_markdown"]']) {
       const field = page.locator(selector);
       expect(await field.evaluate(element => getComputedStyle(element).fontFamily)).toMatch(/Geist.?Mono/i);
       expect(await field.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(16);
     }
   } finally {
-    const deleted = await page.request.delete(`${apiBase}/admin/articles/${article.id}`);
+    const deleted = await page.request.delete(adminAPIUrl(`admin/articles/${article.id}`), {
+      headers: adminOriginHeaders(),
+    });
     expect(deleted.status()).toBe(204);
   }
 });
