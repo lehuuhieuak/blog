@@ -67,7 +67,7 @@ jobs:
       - name: Start stack
         run: docker compose --env-file .env.example up --build --wait
       - name: Run browser lifecycle test
-        run: docker run --rm --network host -v "$PWD/frontend:/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npx playwright test
+        run: docker run --rm --network host -v "$PWD/frontend:/work" -w /work mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test
       - name: Show service logs when a test fails
         if: failure()
         run: docker compose logs --no-color
