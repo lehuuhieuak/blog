@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -55,7 +56,7 @@ func loadRuntimeConfig(getenv func(string) string, now func() time.Time) (runtim
 
 	origin := getenv("CORS_ALLOWED_ORIGIN")
 	if !validRuntimeOrigin(origin) {
-		return runtimeConfig{}, &runtimeConfigError{key: "CORS_ALLOWED_ORIGIN", description: "must be an absolute http(s) origin without a path"}
+		return runtimeConfig{}, &runtimeConfigError{key: "CORS_ALLOWED_ORIGIN", description: "must be a canonical http(s) origin"}
 	}
 	auth, err := deliveryhttp.NewAdminAuth(secret, secure, origin, now)
 	if err != nil {
@@ -65,14 +66,69 @@ func loadRuntimeConfig(getenv func(string) string, now func() time.Time) (runtim
 }
 
 func validRuntimeOrigin(value string) bool {
-	if value == "" || strings.TrimSpace(value) != value {
+	if value == "" || strings.TrimSpace(value) != value || strings.ContainsAny(value, "?#") {
 		return false
 	}
 	parsed, err := url.Parse(value)
 	if err != nil {
 		return false
 	}
-	return (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" && parsed.Path == "" && parsed.RawQuery == "" && parsed.Fragment == ""
+	if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.User != nil || parsed.Opaque != "" || parsed.Path != "" || parsed.RawPath != "" || parsed.RawQuery != "" || parsed.Fragment != "" || parsed.RawFragment != "" || parsed.ForceQuery {
+		return false
+	}
+
+	hostname := parsed.Hostname()
+	canonicalHost, valid := canonicalRuntimeHostname(hostname)
+	if !valid {
+		return false
+	}
+	port := parsed.Port()
+	if port != "" {
+		parsedPort, err := strconv.ParseUint(port, 10, 16)
+		if err != nil || strconv.FormatUint(parsedPort, 10) != port || parsed.Scheme == "http" && parsedPort == 80 || parsed.Scheme == "https" && parsedPort == 443 {
+			return false
+		}
+		canonicalHost += ":" + port
+	}
+	return value == parsed.Scheme+"://"+canonicalHost
+}
+
+func canonicalRuntimeHostname(hostname string) (string, bool) {
+	if hostname == "" {
+		return "", false
+	}
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ipv4 := ip.To4(); ipv4 != nil {
+			return ipv4.String(), true
+		}
+		return "[" + ip.String() + "]", true
+	}
+	if len(hostname) > 253 || hostname != strings.ToLower(hostname) || strings.HasSuffix(hostname, ".") {
+		return "", false
+	}
+	numericAddress := true
+	for _, character := range hostname {
+		if character != '.' && (character < '0' || character > '9') {
+			numericAddress = false
+			break
+		}
+	}
+	if numericAddress {
+		return "", false
+	}
+	for _, label := range strings.Split(hostname, ".") {
+		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return "", false
+		}
+		for _, character := range label {
+			isLowercaseLetter := character >= 'a' && character <= 'z'
+			isDigit := character >= '0' && character <= '9'
+			if !isLowercaseLetter && !isDigit && character != '-' {
+				return "", false
+			}
+		}
+	}
+	return hostname, true
 }
 
 func main() {
