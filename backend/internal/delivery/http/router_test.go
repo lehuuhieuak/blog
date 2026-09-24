@@ -44,7 +44,7 @@ func (f fakeArticles) Preview(string) (application.RenderedMarkdown, error) {
 }
 
 func newTestRouter(articles ArticleUseCases) http.Handler {
-	return NewRouter(articles, func(context.Context) error { return nil }, "https://blog.example", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return NewRouter(articles, func(context.Context) error { return nil }, newHTTPTestAuthForRouter(), "https://blog.example", slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 func TestPublicArticleMapsNotFound(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/articles/draft", nil)
@@ -63,7 +63,7 @@ func TestListRejectsInvalidPagination(t *testing.T) {
 	}
 }
 func TestReadyMapsFailure(t *testing.T) {
-	router := NewRouter(fakeArticles{}, func(context.Context) error { return errors.New("database unavailable") }, "", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	router := NewRouter(fakeArticles{}, func(context.Context) error { return errors.New("database unavailable") }, newHTTPTestAuthForRouter(), "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	request := httptest.NewRequest(http.MethodGet, "/readyz", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
@@ -79,11 +79,32 @@ func TestCORSAllowsConfiguredOriginOnly(t *testing.T) {
 	if response.Header().Get("Access-Control-Allow-Origin") != "https://blog.example" {
 		t.Fatal("configured origin was not allowed")
 	}
+	if response.Header().Get("Access-Control-Allow-Credentials") != "true" {
+		t.Fatal("configured origin was not allowed to send credentials")
+	}
+	if !strings.Contains(response.Header().Get("Vary"), "Origin") {
+		t.Fatal("Vary header does not include Origin")
+	}
 	request = httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	request.Header.Set("Origin", "https://other.example")
 	response = httptest.NewRecorder()
 	newTestRouter(fakeArticles{}).ServeHTTP(response, request)
-	if response.Header().Get("Access-Control-Allow-Origin") != "" {
+	if response.Header().Get("Access-Control-Allow-Origin") != "" || response.Header().Get("Access-Control-Allow-Credentials") != "" {
 		t.Fatal("unexpected CORS origin")
+	}
+	if !strings.Contains(response.Header().Get("Vary"), "Origin") {
+		t.Fatal("Vary header does not include Origin for rejected origin")
+	}
+	request = httptest.NewRequest(http.MethodOptions, "/api/v1/admin/articles", nil)
+	request.Header.Set("Origin", "https://blog.example")
+	request.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	request.Header.Set("Access-Control-Request-Headers", "Content-Type")
+	response = httptest.NewRecorder()
+	newTestRouter(fakeArticles{}).ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent || response.Header().Get("Access-Control-Allow-Origin") != "https://blog.example" || response.Header().Get("Access-Control-Allow-Credentials") != "true" {
+		t.Fatalf("preflight status=%d headers=%v", response.Code, response.Header())
+	}
+	if !strings.Contains(response.Header().Get("Access-Control-Allow-Methods"), "POST") || !strings.Contains(response.Header().Get("Access-Control-Allow-Headers"), "Content-Type") {
+		t.Fatalf("preflight methods/headers = %q / %q", response.Header().Get("Access-Control-Allow-Methods"), response.Header().Get("Access-Control-Allow-Headers"))
 	}
 }

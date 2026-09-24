@@ -35,6 +35,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-blog}:${POSTGRES_PASSWORD:-blog_local_password}@db:5432/${POSTGRES_DB:-blog}?sslmode=disable
       HTTP_ADDR: :8080
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:4321}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET is required}
+      ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-false}
     depends_on:
       migrate:
         condition: service_completed_successfully

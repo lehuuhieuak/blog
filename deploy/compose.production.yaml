@@ -17,6 +17,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       HTTP_ADDR: :8080
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?CORS_ALLOWED_ORIGIN is required}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET is required}
+      ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:?ADMIN_COOKIE_SECURE is required}
     extra_hosts:
       - host.docker.internal:host-gateway
     networks:

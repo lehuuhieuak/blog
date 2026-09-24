@@ -244,6 +244,7 @@ git commit -m "feat: add signed admin sessions"
 - Modify: `backend/internal/delivery/http/router_test.go`
 - Modify: `backend/internal/delivery/http/router_public_test.go`
 - Modify: `backend/cmd/api/main.go`
+- Create: `backend/cmd/api/main_test.go`
 - Modify: `.env.example`
 - Modify: `compose.yaml`
 - Modify: `deploy/runtime.env.example`
@@ -255,9 +256,11 @@ git commit -m "feat: add signed admin sessions"
 - Consumes: `AdminAuth` from Task 2 and `CORS_ALLOWED_ORIGIN`, `ADMIN_SESSION_SECRET`, `ADMIN_COOKIE_SECURE` runtime values.
 - Produces: auth handlers/middleware, `NewRouter(articles ArticleUseCases, ready func(context.Context) error, auth *AdminAuth, corsOrigin string, logger *slog.Logger) *gin.Engine`, protected admin API behavior, and runtime config passed through both Compose files.
 
-- [ ] **Step 1: Write failing HTTP contract tests**
+- [x] **Step 1: Write failing HTTP and bootstrap configuration tests**
 
-Create `auth_http_test.go` with a test router using a fixed clock and 32-byte secret. Cover:
+Create `auth_http_test.go` with a test router using a fixed clock and 32-byte secret. Create `main_test.go` with an injected environment reader and clock; cover a missing or short session secret, invalid `ADMIN_COOKIE_SECURE`, empty or malformed `CORS_ALLOWED_ORIGIN`, and valid configuration.
+
+Cover these HTTP cases:
 
 ```go
 func TestAdminLoginAndSession(t *testing.T)       {}
@@ -269,13 +272,13 @@ func TestAdminUnsafeRoutesRequireOrigin(t *testing.T) {}
 
 For login, send the exact configured `Origin`, JSON credentials, assert `204`, capture `Set-Cookie`, then call session and assert `200`, username `admin`, and the fixed expiry. Wrong username/password must both return the same `401` envelope and no cookie. Table-drive every protected route: list, create, get, update, delete, and Markdown preview; without a cookie each returns `401` before invoking the article fake. Login/logout with missing or wrong origin and authenticated article mutations with missing or wrong origin return `403 csrf_failed`. Public routes stay accessible.
 
-- [ ] **Step 2: Run HTTP tests and confirm red state**
+- [x] **Step 2: Run HTTP and configuration tests and confirm red state**
 
-Run `cd backend && go test ./internal/delivery/http -run 'TestAdmin(Login|Logout|Routes|Unsafe)' -count=1`.
+Run `cd backend && go test ./internal/delivery/http -run 'TestAdmin(Login|Logout|Routes|Unsafe)' -count=1` and `go test ./cmd/api -run '^TestLoadRuntimeConfig$' -count=1`.
 
-Expected: FAIL because routes and middleware are not installed.
+Expected: FAIL because routes/middleware and the bootstrap configuration helper are not installed.
 
-- [ ] **Step 3: Implement handlers and middleware**
+- [x] **Step 3: Implement handlers and middleware**
 
 Add `login`, `session`, `logout`, `requireSession`, and `requireAdminOrigin` in `auth_http.go`. Use the existing error envelope:
 
@@ -299,26 +302,27 @@ protected.GET("/auth/session", auth.session)
 
 Origin middleware skips `GET`, `HEAD`, `OPTIONS`; it rejects every other admin method unless the single `Origin` value exactly equals `allowedOrigin`. CORS preflight remains handled globally before the admin group.
 
-- [ ] **Step 4: Update existing router tests and credentialed CORS tests**
+- [x] **Step 4: Update existing router tests and credentialed CORS tests**
 
 Change test router construction to inject `AdminAuth`. Extend `TestCORSAllowsConfiguredOriginOnly` to assert `Access-Control-Allow-Credentials: true` for the configured origin, no credentials header for another origin, and successful `OPTIONS` with allowed methods/headers. Ensure `Vary` includes `Origin`. Keep public response tests unauthenticated.
 
-- [ ] **Step 5: Parse runtime auth configuration in `main.go`**
+- [x] **Step 5: Parse runtime auth configuration in `main.go`**
 
 Read `ADMIN_SESSION_SECRET`; parse `ADMIN_COOKIE_SECURE` with `strconv.ParseBool`, defaulting only an empty value to `false`. Construct `AdminAuth` with `time.Now` and `CORS_ALLOWED_ORIGIN`. On invalid secret, secure flag, or origin, log only the configuration key and safe error description, then exit before opening the database/server. Pass auth into `NewRouter`.
 
-- [ ] **Step 6: Add runtime variables to development and production Compose**
+- [x] **Step 6: Add runtime variables to development and production Compose**
 
 Require `ADMIN_SESSION_SECRET` for the API service in both Compose files. Use `${ADMIN_COOKIE_SECURE:-false}` locally and `${ADMIN_COOKIE_SECURE:?ADMIN_COOKIE_SECURE is required}` in production. Add empty/change-required placeholders to `.env.example`; add `ADMIN_COOKIE_SECURE=true` and a non-secret placeholder to `deploy/runtime.env.example`. Update `scripts/validate-production-compose.sh` sample environment with a 32-byte test-only secret and `ADMIN_COOKIE_SECURE=true`, then assert both variables appear under the rendered API service.
 
-- [ ] **Step 7: Format and run focused backend/deployment validation**
+- [x] **Step 7: Format and run backend/deployment validation**
 
 Run:
 
 ```bash
 cd backend
-gofmt -w cmd/api/main.go internal/delivery/http/auth_http.go internal/delivery/http/auth_http_test.go internal/delivery/http/router.go internal/delivery/http/router_test.go internal/delivery/http/router_public_test.go
+gofmt -w cmd/api/main.go cmd/api/main_test.go internal/delivery/http/auth_http.go internal/delivery/http/auth_http_test.go internal/delivery/http/router.go internal/delivery/http/router_test.go internal/delivery/http/router_public_test.go
 go test ./internal/delivery/http ./cmd/api -count=1
+go test ./...
 go vet ./...
 cd ..
 ADMIN_SESSION_SECRET=local-test-session-secret-32-bytes-minimum docker compose config --quiet
@@ -327,7 +331,7 @@ bash scripts/validate-production-compose.sh
 
 Expected: all commands pass.
 
-- [ ] **Step 8: Commit protected backend API and runtime config**
+- [x] **Step 8: Commit protected backend API and runtime config**
 
 Stage only Task 3 files and the ledger, inspect the staged diff, and commit:
 

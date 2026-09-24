@@ -33,7 +33,7 @@ type Handler struct {
 	logger   *slog.Logger
 }
 
-func NewRouter(articles ArticleUseCases, ready func(context.Context) error, corsOrigin string, logger *slog.Logger) *gin.Engine {
+func NewRouter(articles ArticleUseCases, ready func(context.Context) error, auth *AdminAuth, corsOrigin string, logger *slog.Logger) *gin.Engine {
 	handler := &Handler{articles: articles, ready: ready, logger: logger}
 	router := gin.New()
 	router.Use(requestID(), requestLogger(logger), gin.Recovery(), cors(corsOrigin))
@@ -44,12 +44,18 @@ func NewRouter(articles ArticleUseCases, ready func(context.Context) error, cors
 	api.GET("/articles/:slug", handler.getPublic)
 	api.GET("/tags", handler.tags)
 	admin := api.Group("/admin")
-	admin.GET("/articles", handler.listAdmin)
-	admin.POST("/articles", handler.create)
-	admin.GET("/articles/:id", handler.getAdmin)
-	admin.PUT("/articles/:id", handler.update)
-	admin.DELETE("/articles/:id", handler.delete)
-	admin.POST("/markdown/preview", handler.preview)
+	admin.Use(auth.requireAdminOrigin())
+	admin.POST("/auth/login", auth.login)
+	admin.POST("/auth/logout", auth.logout)
+	protected := admin.Group("")
+	protected.Use(auth.requireSession())
+	protected.GET("/auth/session", auth.session)
+	protected.GET("/articles", handler.listAdmin)
+	protected.POST("/articles", handler.create)
+	protected.GET("/articles/:id", handler.getAdmin)
+	protected.PUT("/articles/:id", handler.update)
+	protected.DELETE("/articles/:id", handler.delete)
+	protected.POST("/markdown/preview", handler.preview)
 	return router
 }
 
@@ -293,9 +299,10 @@ func requestLogger(logger *slog.Logger) gin.HandlerFunc {
 func cors(origin string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestOrigin := c.GetHeader("Origin")
+		c.Header("Vary", "Origin")
 		if origin != "" && requestOrigin == origin {
 			c.Header("Access-Control-Allow-Origin", origin)
-			c.Header("Vary", "Origin")
+			c.Header("Access-Control-Allow-Credentials", "true")
 			c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 			c.Header("Access-Control-Allow-Headers", "Content-Type,X-Request-ID")
 		}

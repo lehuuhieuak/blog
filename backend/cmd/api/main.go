@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,8 +22,71 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type runtimeConfig struct {
+	adminAuth    *deliveryhttp.AdminAuth
+	corsOrigin   string
+	cookieSecure bool
+}
+
+type runtimeConfigError struct {
+	key         string
+	description string
+}
+
+func (e *runtimeConfigError) Error() string {
+	return fmt.Sprintf("%s: %s", e.key, e.description)
+}
+
+func loadRuntimeConfig(getenv func(string) string, now func() time.Time) (runtimeConfig, error) {
+	secret := getenv("ADMIN_SESSION_SECRET")
+	if len([]byte(secret)) < 32 {
+		return runtimeConfig{}, &runtimeConfigError{key: "ADMIN_SESSION_SECRET", description: "must be at least 32 bytes"}
+	}
+
+	secure := false
+	secureValue := getenv("ADMIN_COOKIE_SECURE")
+	if secureValue != "" {
+		parsed, err := strconv.ParseBool(secureValue)
+		if err != nil {
+			return runtimeConfig{}, &runtimeConfigError{key: "ADMIN_COOKIE_SECURE", description: "must be a boolean"}
+		}
+		secure = parsed
+	}
+
+	origin := getenv("CORS_ALLOWED_ORIGIN")
+	if !validRuntimeOrigin(origin) {
+		return runtimeConfig{}, &runtimeConfigError{key: "CORS_ALLOWED_ORIGIN", description: "must be an absolute http(s) origin without a path"}
+	}
+	auth, err := deliveryhttp.NewAdminAuth(secret, secure, origin, now)
+	if err != nil {
+		return runtimeConfig{}, &runtimeConfigError{key: "ADMIN_SESSION_SECRET", description: "admin authentication configuration is invalid"}
+	}
+	return runtimeConfig{adminAuth: auth, corsOrigin: origin, cookieSecure: secure}, nil
+}
+
+func validRuntimeOrigin(value string) bool {
+	if value == "" || strings.TrimSpace(value) != value {
+		return false
+	}
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	return (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" && parsed.Path == "" && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	config, err := loadRuntimeConfig(os.Getenv, time.Now)
+	if err != nil {
+		var configErr *runtimeConfigError
+		if errors.As(err, &configErr) {
+			logger.Error("invalid runtime configuration", "key", configErr.key, "error", configErr.description)
+		} else {
+			logger.Error("invalid runtime configuration", "error", "unable to initialize authentication")
+		}
+		os.Exit(1)
+	}
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		logger.Error("DATABASE_URL is required")
@@ -33,7 +100,7 @@ func main() {
 	defer pool.Close()
 	repository := postgres.NewRepository(pool)
 	service := application.NewArticleService(repository, postgres.NewTransactionManager(pool), markdown.NewRenderer(), time.Now, uuid.NewString)
-	router := deliveryhttp.NewRouter(service, pool.Ping, os.Getenv("CORS_ALLOWED_ORIGIN"), logger)
+	router := deliveryhttp.NewRouter(service, pool.Ping, config.adminAuth, config.corsOrigin, logger)
 	address := os.Getenv("HTTP_ADDR")
 	if address == "" {
 		address = ":8080"

@@ -29,7 +29,7 @@ func (f publicArticleCases) Preview(string) (application.RenderedMarkdown, error
 
 func TestPublicArticleUsesDataEnvelope(t *testing.T) {
 	article := &domain.Article{ID: "article-1", Title: "Published", Slug: "published", Excerpt: "Summary", ContentMarkdown: "Content", Status: domain.StatusPublished, CreatedAt: time.Now(), UpdatedAt: time.Now()}
-	router := NewRouter(publicArticleCases{article: article}, func(context.Context) error { return nil }, "", slog.New(slog.NewTextHandler(io.Discard, nil)))
+	router := NewRouter(publicArticleCases{article: article}, func(context.Context) error { return nil }, newHTTPTestAuth(t), "", slog.New(slog.NewTextHandler(io.Discard, nil)))
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/articles/published", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
