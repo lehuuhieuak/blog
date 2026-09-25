@@ -60,6 +60,9 @@ jobs:
 
   docker-e2e:
     runs-on: ubuntu-latest
+    env:
+      # Test-only secret for the disposable CI stack.
+      ADMIN_SESSION_SECRET: CI_ONLY_ADMIN_SESSION_SECRET_0123456789abcdef
     steps:
       - uses: actions/checkout@v5
       - name: Validate compose configuration
