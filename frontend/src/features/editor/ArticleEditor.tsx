@@ -244,87 +244,89 @@ export default function ArticleEditor({ article, apiBase }: Props) {
       )}
 
       <div className={`editor-workspace grid items-start gap-8 ${workspaceLayout}`}>
-        <div className={`grid gap-2 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-1" : "min-[68rem]:col-start-2 min-[68rem]:row-start-1"}`}>
-          <div className="border-b border-border pb-2">
-            <Label id="title-label" className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="title">Tiêu đề</Label>
+        <div className={article ? "grid min-w-0 gap-8" : "contents"}>
+          <div className={`grid gap-2 ${article ? "" : "min-[68rem]:col-start-2 min-[68rem]:row-start-1"}`}>
+            <div className="border-b border-border pb-2">
+              <Label id="title-label" className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="title">Tiêu đề</Label>
+            </div>
+            <Input
+              id="title"
+              className={`rounded-sm bg-card px-4 text-base font-medium ${article ? "md:text-xl" : "h-14 md:text-[2rem]"}`}
+              name="title"
+              required
+              autoComplete="off"
+              placeholder="Gõ tiêu đề bài viết tại đây…"
+              value={fields.title}
+              onChange={(event) => {
+                const title = event.target.value
+                updateField("title", title)
+                if (!manuallyEditedSlug && !slugLocked) {
+                  setFields((current) => ({ ...current, slug: slugify(title) }))
+                }
+              }}
+            />
           </div>
-          <Input
-            id="title"
-            className={`rounded-sm bg-card px-4 text-base font-medium ${article ? "md:text-xl" : "h-14 md:text-[2rem]"}`}
-            name="title"
-            required
-            autoComplete="off"
-            placeholder="Gõ tiêu đề bài viết tại đây…"
-            value={fields.title}
-            onChange={(event) => {
-              const title = event.target.value
-              updateField("title", title)
-              if (!manuallyEditedSlug && !slugLocked) {
-                setFields((current) => ({ ...current, slug: slugify(title) }))
-              }
-            }}
-          />
+
+          <section className={`grid gap-5 ${article ? "" : "min-[68rem]:col-start-1 min-[68rem]:row-span-3 min-[68rem]:row-start-1"}`} aria-labelledby="metadata-title">
+            <div className="flex items-center gap-2 border-b border-border pb-2">
+              <FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+              <h2 id="metadata-title" className="m-0 font-mono text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Thông tin ấn bản</h2>
+            </div>
+            <div className="grid gap-5">
+              <div className="grid gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="slug">Slug</Label>
+                  {slugLocked ? <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><LockKeyholeIcon className="size-3.5" aria-hidden="true" />Đã cố định</span> : null}
+                </div>
+                <Input
+                  id="slug"
+                  className="rounded-sm bg-card font-mono text-base sm:text-sm"
+                  name="slug"
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  disabled={slugLocked}
+                  aria-describedby={slugLocked ? "slug-locked-note" : undefined}
+                  value={fields.slug}
+                  onChange={(event) => {
+                    setManuallyEditedSlug(event.target.value.length > 0)
+                    updateField("slug", event.target.value)
+                  }}
+                />
+              </div>
+              {slugLocked ? (
+                <p id="slug-locked-note" className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LockKeyholeIcon className="size-4 shrink-0" aria-hidden="true" />
+                  Slug được khóa sau lần xuất bản đầu tiên để bảo vệ liên kết.
+                </p>
+              ) : null}
+              <div className="grid gap-2">
+                <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="excerpt">Tóm tắt</Label>
+                <Textarea className="min-h-24 rounded-sm bg-card text-base sm:text-sm" id="excerpt" name="excerpt" required value={fields.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="tags">Thẻ <span id="tags-note" className="font-normal normal-case tracking-normal">(ngăn cách bằng dấu phẩy)</span></Label>
+                <Input className="rounded-sm bg-card text-base sm:text-sm" id="tags" name="tags" aria-describedby="tags-note" value={fields.tags} onChange={(event) => updateField("tags", event.target.value)} />
+              </div>
+            </div>
+          </section>
+
+          <section className={`grid gap-2 ${article ? "" : "min-[68rem]:col-start-2 min-[68rem]:row-start-2"}`}>
+            <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
+              <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="content-markdown">Nội dung Markdown</Label>
+              <span className="font-mono text-xs text-muted-foreground">Hỗ trợ GFM</span>
+            </div>
+            <Textarea
+              id="content-markdown"
+              className="editor-content min-h-[34rem] resize-y rounded-sm bg-card p-4 font-mono text-base leading-relaxed sm:text-sm"
+              name="content_markdown"
+              required
+              placeholder="Bắt đầu viết bằng Markdown…"
+              value={fields.content_markdown}
+              onChange={(event) => updateField("content_markdown", event.target.value)}
+            />
+          </section>
         </div>
 
-        <section className={`grid gap-5 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-2" : "min-[68rem]:col-start-1 min-[68rem]:row-span-3 min-[68rem]:row-start-1"}`} aria-labelledby="metadata-title">
-          <div className="flex items-center gap-2 border-b border-border pb-2">
-            <FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h2 id="metadata-title" className="m-0 font-mono text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Thông tin ấn bản</h2>
-          </div>
-          <div className="grid gap-5">
-            <div className="grid gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="slug">Slug</Label>
-                {slugLocked ? <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><LockKeyholeIcon className="size-3.5" aria-hidden="true" />Đã cố định</span> : null}
-              </div>
-              <Input
-                id="slug"
-                className="rounded-sm bg-card font-mono text-base sm:text-sm"
-                name="slug"
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                disabled={slugLocked}
-                aria-describedby={slugLocked ? "slug-locked-note" : undefined}
-                value={fields.slug}
-                onChange={(event) => {
-                  setManuallyEditedSlug(event.target.value.length > 0)
-                  updateField("slug", event.target.value)
-                }}
-              />
-            </div>
-            {slugLocked ? (
-              <p id="slug-locked-note" className="flex items-center gap-2 text-sm text-muted-foreground">
-                <LockKeyholeIcon className="size-4 shrink-0" aria-hidden="true" />
-                Slug được khóa sau lần xuất bản đầu tiên để bảo vệ liên kết.
-              </p>
-            ) : null}
-            <div className="grid gap-2">
-              <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="excerpt">Tóm tắt</Label>
-              <Textarea className="min-h-24 rounded-sm bg-card text-base sm:text-sm" id="excerpt" name="excerpt" required value={fields.excerpt} onChange={(event) => updateField("excerpt", event.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="tags">Thẻ <span id="tags-note" className="font-normal normal-case tracking-normal">(ngăn cách bằng dấu phẩy)</span></Label>
-              <Input className="rounded-sm bg-card text-base sm:text-sm" id="tags" name="tags" aria-describedby="tags-note" value={fields.tags} onChange={(event) => updateField("tags", event.target.value)} />
-            </div>
-          </div>
-        </section>
-
-        <section className={`grid gap-2 ${article ? "min-[68rem]:col-start-1 min-[68rem]:row-start-3" : "min-[68rem]:col-start-2 min-[68rem]:row-start-2"}`}>
-          <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
-            <Label className="font-mono text-xs uppercase tracking-[0.08em] text-muted-foreground" htmlFor="content-markdown">Nội dung Markdown</Label>
-            <span className="font-mono text-xs text-muted-foreground">Hỗ trợ GFM</span>
-          </div>
-          <Textarea
-            id="content-markdown"
-            className="editor-content min-h-[34rem] resize-y rounded-sm bg-card p-4 font-mono text-base leading-relaxed sm:text-sm"
-            name="content_markdown"
-            required
-            placeholder="Bắt đầu viết bằng Markdown…"
-            value={fields.content_markdown}
-            onChange={(event) => updateField("content_markdown", event.target.value)}
-          />
-        </section>
-
-        <div className={`grid gap-2 min-[68rem]:col-start-2 min-[68rem]:sticky min-[68rem]:top-6 ${article ? "min-[68rem]:row-span-3 min-[68rem]:row-start-1" : "min-[68rem]:row-start-3"}`}>
+        <div className={`grid gap-2 min-[68rem]:col-start-2 min-[68rem]:sticky min-[68rem]:top-6 ${article ? "min-[68rem]:row-start-1" : "min-[68rem]:row-start-3"}`}>
           <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
             <h2 id="preview-title" className="m-0 font-mono text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Bản xem trước</h2>
           </div>
